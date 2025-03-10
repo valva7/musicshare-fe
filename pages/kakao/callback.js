@@ -12,6 +12,23 @@ export default function KakaoCallback() {
   useEffect(() => {
     const { code, error: kakaoError } = router.query
 
+    const checkLogin = async () => {
+      try {
+        const response = await fetch("http://localhost:8080/login/check", {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("access_token")}`,
+          },
+        });
+
+        if (response.ok) {
+          router.replace("/main/post"); // 로그인 상태이면 캘린더로 이동
+        }
+      } catch (error) {
+      }
+    };
+
+    checkLogin();
+
     if (code) {
       // 실제 백엔드 API 호출하여 코드로 액세스 토큰을 교환합니다.
       const exchangeCodeForToken = async () => {
@@ -30,14 +47,17 @@ export default function KakaoCallback() {
             // 받은 토큰을 로컬 스토리지에 저장
             const access_token = data.value;
             localStorage.setItem("access_token", access_token);
+            router.push("/main/post")
           } else {
             // 오류가 발생한 경우
             setStatus("error");
             setError(data.error || "알 수 없는 오류가 발생했습니다.");
+            router.push("/login")
           }
         } catch (error) {
           setStatus("error");
           setError("카카오 로그인 중 네트워크 오류가 발생했습니다.");
+          router.push("/login")
         }
       };
 
@@ -46,13 +66,14 @@ export default function KakaoCallback() {
   }, [router.query]);
 
   const handleGoToMain = () => {
-    router.push("/main/calendar")
+    router.push("/main/post")
   }
 
   const handleGoToLogin = () => {
     router.push("/login")
   }
 
+  {/*
   if (status === "loading") {
     return (
         <div className="min-h-screen bg-gray-100 flex flex-col justify-center items-center">
@@ -93,5 +114,6 @@ export default function KakaoCallback() {
         </div>
       </div>
   )
+  */}
 }
 

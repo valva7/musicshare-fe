@@ -16,7 +16,7 @@ export default function KakaoLogin() {
         });
 
         if (response.ok) {
-          router.replace("/main/calendar"); // 로그인 상태이면 캘린더로 이동
+          router.replace("/main/post"); // 로그인 상태이면 캘린더로 이동
         }
       } catch (error) {
       }
