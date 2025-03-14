@@ -1,6 +1,6 @@
 import "@/styles/globals.css";
 import { useRouter } from "next/router";
-import Header from "@/pages/common/header";
+import Header from "@/pages/common/Header";
 
 
 export default function App({ Component, pageProps }) {
@@ -11,7 +11,7 @@ export default function App({ Component, pageProps }) {
     <div className="flex">
       <div className="flex-1">
         {/* 헤더 */}
-        <Header/>
+        {!noHeaderFooter.includes(router.pathname) && <Header />}
         {/* 현재 페이지가 noHeaderFooter에 포함되지 않으면 헤더를 표시 */}
 
         {/* 페이지 내용 */}

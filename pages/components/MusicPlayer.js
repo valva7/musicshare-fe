@@ -23,7 +23,7 @@ export default function MusicPlayer() {
       duration: "07:00",
       tags: ["일렉트로닉"],
       image: "https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png",
-      audioSrc: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-7.mp3",
+      audioSrc: "https://musicfile-bucket.s3.ap-southeast-2.amazonaws.com//62d3c868-59fd-4395-bd26-61e62375fc4d_SoundHelix-Song-1.mp3",
     },
     {
       id: 2,
@@ -32,7 +32,7 @@ export default function MusicPlayer() {
       duration: "05:25",
       tags: ["일렉트로닉"],
       image: "https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png",
-      audioSrc: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-8.mp3",
+      audioSrc: "https://musicfile-bucket.s3.ap-southeast-2.amazonaws.com//62d3c868-59fd-4395-bd26-61e62375fc4d_SoundHelix-Song-1.mp3",
     }
   ]
 
@@ -166,9 +166,6 @@ export default function MusicPlayer() {
                     </div>
                     <div className="flex items-center gap-4 opacity-0 group-hover:opacity-100 transition-opacity">
                       <button className="p-2 hover:text-[#4AFF8C]">
-                        <Volume2 size={20} />
-                      </button>
-                      <button className="p-2 hover:text-[#4AFF8C]">
                         <Bookmark size={20} />
                       </button>
                       <button className="p-2 hover:text-[#4AFF8C]">
@@ -227,9 +224,6 @@ export default function MusicPlayer() {
 
                 <div className="flex items-center gap-4">
                   <button className="p-2 hover:text-[#4AFF8C]">
-                    <Volume2 size={20} />
-                  </button>
-                  <button className="p-2 hover:text-[#4AFF8C]">
                     <Bookmark size={20} />
                   </button>
                   <button className="p-2 hover:text-[#4AFF8C]">
@@ -250,7 +244,8 @@ export default function MusicPlayer() {
             onLoadedMetadata={() => setDuration(audioRef.current.duration)}
             onEnded={() => setIsPlaying(false)}
         >
-          <source src="" type="audio/mpeg" />
+          {/* 빈 src를 제거하고 동적으로 설정된 audioRef의 src가 자동으로 적용됨 */}
+          <source src={currentTrack ? currentTrack.audioSrc : ""} type="audio/mpeg" />
           브라우저가 오디오 태그를 지원하지 않습니다.
         </audio>
       </div>

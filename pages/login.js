@@ -3,8 +3,6 @@ import { useRouter } from "next/router";
 
 export default function KakaoLogin() {
   const router = useRouter();
-  const [email, setEmail] = useState("")
-  const [password, setPassword] = useState("")
 
   useEffect(() => {
     const checkLogin = async () => {
@@ -15,8 +13,11 @@ export default function KakaoLogin() {
           },
         });
 
-        if (response.ok) {
-          router.replace("/main/post"); // 로그인 상태이면 캘린더로 이동
+        // JSON 응답을 파싱
+        const result = await response.json();
+
+        if (result.code === 0) {
+          router.replace("/main/home"); // 로그인 상태이면 메인으로 이동
         }
       } catch (error) {
       }
@@ -24,12 +25,6 @@ export default function KakaoLogin() {
 
     checkLogin();
   }, []);
-
-  const handleSubmit = (e) => {
-    e.preventDefault()
-    // 여기에 로그인 로직을 구현합니다.
-    console.log("로그인 시도:", email, password)
-  }
 
   // 카카오 개발자 앱 키 선언
   const REST_API_KEY = "b5b4e67b3c1c519d3dd172cdc4cd5cc8"; // RestAPI 키
@@ -44,52 +39,14 @@ export default function KakaoLogin() {
 
         <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
           <div className="bg-white py-8 px-4 shadow sm:rounded-lg sm:px-10">
-            <form className="space-y-6" onSubmit={handleSubmit}>
-              <div>
-                <label htmlFor="email" className="block text-sm font-medium text-gray-700">
-                  이메일 주소
-                </label>
-                <div className="mt-1">
-                  <input
-                      id="email"
-                      name="email"
-                      type="email"
-                      autoComplete="email"
-                      required
-                      className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-yellow-500 focus:border-yellow-500 sm:text-sm"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label htmlFor="password" className="block text-sm font-medium text-gray-700">
-                  비밀번호
-                </label>
-                <div className="mt-1">
-                  <input
-                      id="password"
-                      name="password"
-                      type="password"
-                      autoComplete="current-password"
-                      required
-                      className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-yellow-500 focus:border-yellow-500 sm:text-sm"
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                  />
-                </div>
-              </div>
-
-              <div>
-                <button type="submit"
-                        className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-gray-900 bg-yellow-400 hover:bg-yellow-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-yellow-500">
-                  <a href={KAKAO_AUTH_URI}>
-                      카카오 계정으로 로그인
-                    </a>
-                </button>
-              </div>
-            </form>
+            <div>
+              <button type="submit"
+                      className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-gray-900 bg-yellow-400 hover:bg-yellow-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-yellow-500">
+                <a href={KAKAO_AUTH_URI}>
+                    카카오 계정으로 로그인
+                  </a>
+              </button>
+            </div>
 
             <div className="mt-6">
               <div className="relative">
