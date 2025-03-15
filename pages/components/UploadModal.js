@@ -1,15 +1,15 @@
 "use client"
 
 import { useState, useRef } from "react"
-import { X, Upload, Music, AlertCircle } from "lucide-react"
-import {
-  fetchWithAuth,
-  fetchFileWithAuth
-} from "@/pages/common/Fetch";
+import { X, Upload, Music, AlertCircle, Loader } from "lucide-react"
+import { fetchFileWithAuth } from "@/pages/common/fetch";
 
 export default function UploadModal({ isOpen, onClose }) {
   const [dragActive, setDragActive] = useState(false)
   const [uploadedFile, setUploadedFile] = useState(null)
+  const [isUploading, setIsUploading] = useState(false) // 업로드 중 상태 추가
+  const [step, setStep] = useState(1) // 1: 파일 업로드, 2: 메타데이터 입력
+  const fileInputRef = useRef(null)
   const [formData, setFormData] = useState({
     title: "",
     genre: "",
@@ -18,8 +18,6 @@ export default function UploadModal({ isOpen, onClose }) {
     tags: "",
     description: "",
   })
-  const [step, setStep] = useState(1) // 1: 파일 업로드, 2: 메타데이터 입력
-  const fileInputRef = useRef(null)
 
   if (!isOpen) return null
 
@@ -113,6 +111,9 @@ export default function UploadModal({ isOpen, onClose }) {
       return;
     }
 
+    // 업로드 시작 시 로딩 상태 활성화
+    setIsUploading(true)
+
     try {
       // 파일과 메타데이터를 함께 전송하기 위해 FormData 객체 사용
       const sendFormData = new FormData();
@@ -124,7 +125,7 @@ export default function UploadModal({ isOpen, onClose }) {
       sendFormData.append("tags", formData.tags);
       sendFormData.append("title", formData.title);
 
-      const response = await fetchFileWithAuth("http://localhost:8080/music/upload", {
+      const response = await fetchFileWithAuth("/music/upload", {
         method: "POST",
         body: sendFormData,
       });
@@ -140,6 +141,9 @@ export default function UploadModal({ isOpen, onClose }) {
       }
     } catch (error) {
       console.error("업로드 실패", error);
+    } finally {
+      // 업로드 완료 후 로딩 상태 비활성화
+      setIsUploading(false)
     }
 
     // 업로드 완료 후 모달 닫기
@@ -172,7 +176,7 @@ export default function UploadModal({ isOpen, onClose }) {
           {/* 헤더 */}
           <div className="flex items-center justify-between px-6 py-4 border-b border-gray-800">
             <h2 className="text-xl font-bold text-white">음악 파일 업로드</h2>
-            <button onClick={onClose} className="text-gray-400 hover:text-white transition-colors">
+            <button onClick={onClose} className="text-gray-400 hover:text-white transition-colors" disabled={isUploading}>
               <X size={24} />
             </button>
           </div>
@@ -233,6 +237,7 @@ export default function UploadModal({ isOpen, onClose }) {
                             onChange={handleInputChange}
                             className="w-full px-4 py-2 bg-[#333] border border-gray-700 rounded-lg text-white focus:outline-none focus:border-[#4AFF8C]"
                             required
+                            disabled={isUploading}
                         />
                       </div>
                     </div>
@@ -244,6 +249,7 @@ export default function UploadModal({ isOpen, onClose }) {
                           value={formData.genre}
                           onChange={handleInputChange}
                           className="w-full px-4 py-2 bg-[#333] border border-gray-700 rounded-lg text-white focus:outline-none focus:border-[#4AFF8C]"
+                          disabled={isUploading}
                       >
                         <option value="">장르 선택</option>
                         <option value="pop">팝</option>
@@ -299,6 +305,7 @@ export default function UploadModal({ isOpen, onClose }) {
                           onChange={handleInputChange}
                           placeholder="예: 피아노, 감성적, BPM(120-139)"
                           className="w-full px-4 py-2 bg-[#333] border border-gray-700 rounded-lg text-white focus:outline-none focus:border-[#4AFF8C]"
+                          disabled={isUploading}
                       />
                     </div>
 
@@ -333,20 +340,47 @@ export default function UploadModal({ isOpen, onClose }) {
             <button
                 onClick={handleCancel}
                 className="px-4 py-2 border border-gray-700 rounded-lg text-white hover:bg-gray-800 transition-colors"
+                disabled={isUploading}
             >
               {step === 1 ? "취소" : "이전"}
             </button>
             {step === 2 && (
                 <button
                     onClick={handleSubmit}
-                    className="px-4 py-2 bg-[#4AFF8C] text-black rounded-lg font-medium hover:bg-[#3de07d] transition-colors flex items-center"
+                    className={`px-4 py-2 bg-[#4AFF8C] text-black rounded-lg font-medium hover:bg-[#3de07d] transition-colors flex items-center ${
+                        isUploading ? "opacity-70 cursor-not-allowed" : ""
+                    }`}
+                    disabled={isUploading}
                 >
-                  <Upload size={18} className="mr-2" />
-                  업로드
+                  {isUploading ? (
+                      <>
+                        <Loader size={18} className="mr-2 animate-spin" />
+                        업로드 중...
+                      </>
+                  ) : (
+                      <>
+                        <Upload size={18} className="mr-2" />
+                        업로드
+                      </>
+                  )}
                 </button>
             )}
           </div>
         </div>
+        {/* 업로드 중 오버레이 */}
+        {isUploading && (
+            <div className="fixed inset-0 bg-black bg-opacity-80 z-50 flex items-center justify-center">
+              <div className="bg-[#242424] p-8 rounded-xl shadow-xl flex flex-col items-center">
+                <div className="w-16 h-16 mb-4 flex items-center justify-center">
+                  <Loader size={48} className="text-[#4AFF8C] animate-spin" />
+                </div>
+                <h3 className="text-xl font-medium text-white mb-2">파일 업로드 중...</h3>
+                <p className="text-gray-400 text-center max-w-md">
+                  음악 파일을 서버에 업로드하고 있습니다. 잠시만 기다려주세요.
+                </p>
+              </div>
+            </div>
+        )}
       </div>
   )
 }

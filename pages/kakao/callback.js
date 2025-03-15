@@ -23,14 +23,14 @@ export default function KakaoCallback() {
           });
 
           const result = await response.json();
-          console.log("callback before" + result.code)
-          console.log("callback before" + result.message)
-          console.log("callback before" + result.value)
+          console.log(result);
+
           if (result.code === 0) {
-            console.log("callback 성공")
             setStatus("success");
-            const access_token = result.value;
+            const access_token = result.value.accessToken;
+            const refresh_token = result.value.refreshToken;
             localStorage.setItem("access_token", access_token);
+            localStorage.setItem("refresh_token", refresh_token);
             router.push("/main/home");
           } else {
             setStatus("error");

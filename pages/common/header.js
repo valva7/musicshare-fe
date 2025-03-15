@@ -20,6 +20,29 @@ export default function Header() {
   useEffect(() => {
     const token = localStorage.getItem("access_token")
     setAccessToken(token)
+
+    // const checkLogin = async () => {
+    //   try {
+    //     const response = await fetch("http://localhost:8080/login/check", {
+    //       headers: {
+    //         Authorization: `Bearer ${token}`,
+    //       },
+    //     });
+    //
+    //     // JSON 응답을 파싱
+    //     const result = await response.json();
+    //
+    //     console.log('로그인 체크1')
+    //     console.log(result)
+    //     if (result.code === 0) {
+    //       console.log('로그인 체크2')
+    //       setAccessToken(token)
+    //     }
+    //   } catch (error) {
+    //   }
+    // };
+    //
+    // checkLogin();
   }, [router.query]);
 
 
@@ -43,30 +66,21 @@ export default function Header() {
 
   const menuItems = [
     {
-      title: "AI 검색",
-      icon: <Search className="w-5 h-5" />,
-      submenu: ["검색", "숏폼", "루프", "플레이리스트", "공모전 수상곡"],
-    },
-    {
       title: "음악",
-      submenu: ["검색", "게임", "카툰", "전체보기"],
+      submenu: ["게임", "전체보기"],
     },
     {
       title: "효과음",
-      submenu: ["게임", "카툰", "전체보기"],
+      submenu: ["게임","전체보기"],
     },
     {
       title: "무료",
-      submenu: ["배민음악", "전체보기"],
+      submenu: ["전체보기"],
     },
     {
       title: "special에디션",
       isSpecial: true,
-      submenu: ["변신섭", "갓대급", "이채빈", "더보이즈(THE BOYZ)", "전체보기"],
-    },
-    {
-      title: "이벤트",
-      submenu: ["봉어빵", "이벤트목록"],
+      submenu: ["devKim의 숨은명곡"],
     },
   ]
 

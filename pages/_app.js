@@ -1,6 +1,6 @@
 import "@/styles/globals.css";
 import { useRouter } from "next/router";
-import Header from "@/pages/common/Header";
+import Header from "@/pages/common/header";
 
 
 export default function App({ Component, pageProps }) {
