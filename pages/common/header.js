@@ -20,6 +20,7 @@ export default function Header() {
   useEffect(() => {
     const token = localStorage.getItem("access_token")
     setAccessToken(token)
+    console.log(token);
 
     // const checkLogin = async () => {
     //   try {

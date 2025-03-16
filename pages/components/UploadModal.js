@@ -13,7 +13,6 @@ export default function UploadModal({ isOpen, onClose }) {
   const [formData, setFormData] = useState({
     title: "",
     genre: "",
-    mood: "",
     theme: "",
     tags: "",
     description: "",
@@ -88,10 +87,6 @@ export default function UploadModal({ isOpen, onClose }) {
 
   const handleSubmit = async (e) => {
     e.preventDefault()
-    // 여기서 실제 업로드 로직 구현
-    console.log("업로드 파일:", uploadedFile)
-    console.log("메타데이터:", formData)
-    console.log("title:", formData.title)
 
     // 음악 정보 valid
     if (formData.title === ''){
@@ -260,22 +255,6 @@ export default function UploadModal({ isOpen, onClose }) {
                         <option value="classical">클래식</option>
                         <option value="kpop">K-Pop</option>
                         <option value="ost">OST</option>
-                      </select>
-                    </div>
-
-                    <div>
-                      <label className="block text-gray-400 text-sm mb-1">분위기</label>
-                      <select
-                          name="mood"
-                          value={formData.mood}
-                          onChange={handleInputChange}
-                          className="w-full px-4 py-2 bg-[#333] border border-gray-700 rounded-lg text-white focus:outline-none focus:border-[#4AFF8C]"
-                      >
-                        <option value="">분위기 선택</option>
-                        <option value="bright">밝은</option>
-                        <option value="cheerful">경쾌한</option>
-                        <option value="happy">행복한</option>
-                        <option value="cute">귀여운</option>
                       </select>
                     </div>
 

@@ -43,7 +43,7 @@ export const postWithAuthFetch = async (router, url, options = {}) => {
 }
 
 // Get Fetch
-export const getWithAuthFetch = async (router, url, options = {}) => {
+export const getWithAuthFetch = async (url, options = {}) => {
   let accessToken = getAccessToken();
 
   // Header
