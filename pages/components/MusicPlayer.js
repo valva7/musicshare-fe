@@ -1,6 +1,6 @@
 "use client"
 
-import {useEffect, useRef, useState} from "react"
+import { useEffect, useRef, useState } from "react"
 import {
   AtSign,
   Bookmark,
@@ -15,11 +15,20 @@ import {
   SkipBack,
   SkipForward,
   Smile,
-  X
+  Volume2,
+  X,
 } from "lucide-react"
 import Image from "next/image"
-import {AnimatePresence, motion} from "framer-motion"
-import {getWithAuthFetch} from "@/pages/common/fetch";
+import { AnimatePresence, motion } from "framer-motion"
+import {
+  getWithAuthFetch,
+  postWithAuthFetch,
+  getWithAuthAndParamsFetch,
+  getWithoutAuthFetch
+} from "@/pages/common/fetch"
+
+// 이모지 선택 옵션
+const emojiOptions = ["👍", "❤️", "🔥", "👏", "🎵", "🎧", "✨", "😊", "🥰", "😎"]
 
 export default function MusicPlayer() {
   // 상태 관리 부분 수정
@@ -35,30 +44,19 @@ export default function MusicPlayer() {
   const [showComments, setShowComments] = useState(true)
   const commentIntervalRef = useRef(null)
   const [accessToken, setAccessToken] = useState(null)
+
   // 상태 관리 부분에 댓글 작성 모달 관련 상태 추가
   const [isCommentModalOpen, setIsCommentModalOpen] = useState(false)
   const [commentText, setCommentText] = useState("")
   const [selectedTrackForComment, setSelectedTrackForComment] = useState(null)
   const [showEmojiPicker, setShowEmojiPicker] = useState(false)
   const [allComments, setAllComments] = useState(false)
-  // 이모지 선택 옵션
-  const emojiOptions = ["👍", "❤️", "🔥", "👏", "🎵", "🎧", "✨", "😊", "🥰", "😎"]
 
   // Tracks
-  const [musicTracks, setMusicTracks] = useState([]);
+  const [musicTracks, setMusicTracks] = useState([])
   // Comments
-  const sampleComments = {
-    1: [
-      { id: 1, user: "음악좋아", text: "귀엽고 신나는 곡이네요!"},
-      { id: 2, user: "멜로디", text: "이런 분위기 좋아요~"},
-      { id: 3, user: "비트메이커", text: "BPM이 딱 좋습니다"},
-    ],
-    2: [
-      { id: 1, user: "재잘재잘", text: "경쾌한 리듬이 매력적!"},
-      { id: 2, user: "음악여행", text: "신디사이저 소리가 예술이에요"},
-      { id: 3, user: "작곡가", text: "인디음악의 진수!"},
-    ]
-  }
+  const [trackComments, setTrackComments] = useState({})
+  const [isLoadingComments, setIsLoadingComments] = useState(false)
 
   const formatTime = (time) => {
     const minutes = Math.floor(time / 60)
@@ -66,8 +64,8 @@ export default function MusicPlayer() {
     return `${minutes.toString().padStart(2, "0")}:${seconds.toString().padStart(2, "0")}`
   }
 
-  // 트랙 재생 함수 수정
-  const handlePlayPause = (trackId) => {
+  // 트랙 재생 함수 (재생 시 댓글 로드 추가)
+  const handlePlayPause = async (trackId) => {
     const selectedTrack = musicTracks.find((track) => track.musicId === trackId)
 
     if (currentTrackId === trackId && isPlaying) {
@@ -83,6 +81,9 @@ export default function MusicPlayer() {
         audioRef.current.load()
         setCurrentTime(0) // 새 트랙은 처음부터 시작
         setCurrentCommentIndex(0) // 댓글 인덱스 초기화
+
+        // 새 트랙의 댓글 로드
+        await loadTrackComments(trackId)
       }
 
       audioRef.current.play()
@@ -90,6 +91,40 @@ export default function MusicPlayer() {
       setCurrentTrackId(trackId)
       setCurrentTrack(selectedTrack) // 현재 트랙 정보 설정
       setPlayerBarVisible(true) // 플레이어 바 표시
+    }
+  }
+
+  // 특정 트랙의 댓글을 로드
+  const loadTrackComments = async (trackId) => {
+    if (!trackId) return
+
+    try {
+      setIsLoadingComments(true)
+      const params = { musicId: trackId }
+      const result = await getWithAuthAndParamsFetch("/comment", params)
+
+      if (result && Array.isArray(result.value)) {
+        setTrackComments((prev) => ({
+          ...prev,
+          [trackId]: result.value.map((comment) => ({
+            id: comment.id,
+            authorId: comment.authorId,
+            user: comment.authorNickname,
+            authorProfile: comment.authorProfile,
+            text: comment.content,
+            timestamp: comment.regDt,
+            likes: comment.likeCount || 0,
+          })),
+        }))
+      } else {
+        // 빈 배열로 설정하여 에러 방지
+        setTrackComments((prev) => ({ ...prev, [trackId]: [] }))
+      }
+    } catch (error) {
+      console.error("댓글 로드 중 오류 발생:", error)
+      setTrackComments((prev) => ({ ...prev, [trackId]: [] }))
+    } finally {
+      setIsLoadingComments(false)
     }
   }
 
@@ -109,7 +144,7 @@ export default function MusicPlayer() {
     setCurrentTime(newTime)
   }
 
-  // 트랙별 진행 상태 계산 - 수정됨
+  // 트랙별 진행 상태 계산
   const getTrackProgress = (trackId) => {
     if (currentTrackId !== trackId) return 0
     // 재생 중이 아니더라도 현재 트랙의 진행 상태 반환
@@ -118,7 +153,7 @@ export default function MusicPlayer() {
 
   // 현재 트랙의 댓글 가져오기
   const getCurrentComments = () => {
-    return currentTrackId ? sampleComments[currentTrackId] || [] : []
+    return currentTrackId && trackComments[currentTrackId] ? trackComments[currentTrackId] : []
   }
 
   // 현재 표시할 댓글
@@ -130,21 +165,60 @@ export default function MusicPlayer() {
     setShowEmojiPicker(false)
   }
 
+  // 댓글 등록
+  const addComment = async () => {
+    if (commentText.trim() && selectedTrackForComment) {
+      try {
+        // 새로운 댓글 객체 생성
+        const newComment = {
+          musicId: selectedTrackForComment,
+          content: commentText,
+        }
+
+        // 댓글 저장
+        const response = await postWithAuthFetch("/comment", newComment)
+
+        if (response && response.code === 0) {
+          // 댓글 추가 성공 시 해당 트랙의 댓글 다시 로드
+          await loadTrackComments(selectedTrackForComment)
+
+          // 현재 재생 중인 트랙에 댓글을 추가한 경우 댓글 인덱스 초기화
+          if (selectedTrackForComment === currentTrackId) {
+            setCurrentCommentIndex(0)
+          }
+        }
+      } catch (error) {
+        console.error("댓글 추가 중 오류 발생:", error)
+      }
+
+      // 모달 닫기 및 상태 초기화
+      setCommentText("")
+      setIsCommentModalOpen(false)
+      setShowComments(true)
+    }
+  }
+
+  // 트랙 목록 로드
   useEffect(() => {
     const getTracks = async () => {
-      const result = await getWithAuthFetch("/music/hot/current", {});
+      try {
+        const result = await getWithoutAuthFetch("/music/public/hot/current", {})
+        if (result && result.value) {
+          setMusicTracks(result.value)
+        }
+      } catch (error) {
+        console.error("트랙 로드 중 오류 발생:", error)
+      }
+    }
 
-      console.log(result.value);
-      setMusicTracks(result.value);
-    };
+    getTracks()
+  }, [])
 
-    getTracks();
-  }, []);
-
+  // 액세스 토큰 확인
   useEffect(() => {
     const token = localStorage.getItem("access_token")
     setAccessToken(token)
-  })
+  }, [])
 
   // 댓글 순환 효과
   useEffect(() => {
@@ -157,8 +231,8 @@ export default function MusicPlayer() {
       // 새로운 인터벌 설정
       commentIntervalRef.current = setInterval(() => {
         setCurrentCommentIndex((prevIndex) => {
-          const comments = sampleComments[currentTrackId]
-          return comments ? (prevIndex + 1) % comments.length : 0
+          const comments = trackComments[currentTrackId] || []
+          return comments.length > 0 ? (prevIndex + 1) % comments.length : 0
         })
       }, 3000) // 3초마다 댓글 변경
     }
@@ -168,7 +242,7 @@ export default function MusicPlayer() {
         clearInterval(commentIntervalRef.current)
       }
     }
-  }, [isPlaying, currentTrackId, showComments])
+  }, [isPlaying, currentTrackId, showComments, trackComments])
 
   return (
       <div className="min-h-screen bg-[#1A1A1A] text-white p-8">
@@ -196,7 +270,7 @@ export default function MusicPlayer() {
                   <div className="flex items-center gap-4">
                     <span className="text-[#4AFF8C] text-2xl font-medium w-8">{index + 1}</span>
                     <Image
-                        src={track.profileImageUrl || "/placeholder.svg"}
+                        src={track.profileImageUrl || "https://cdn-icons-png.flaticon.com/512/64/64572.png"}
                         alt={track.title}
                         width={48}
                         height={48}
@@ -237,42 +311,54 @@ export default function MusicPlayer() {
 
                       {/* 태그 */}
                       <div className="flex items-center gap-2 mt-2">
-                        <span className="text-xs text-gray-400">
-                          {track.mood}
-                        </span>
+                        <span className="text-xs text-gray-400">{track.mood}</span>
                       </div>
                     </div>
 
                     {/* 액션 버튼 */}
                     <div className="flex items-center gap-4 opacity-0 group-hover:opacity-100 transition-opacity">
                       {accessToken ? (
-                        <>
-                          <button className="p-2 hover:text-[#4AFF8C]">
-                            <Bookmark size={20} />
-                          </button>
-                          <button className="p-2 hover:text-[#4AFF8C]">
-                            <Download size={20} />
-                          </button>
-                          <button className="p-2 hover:text-[#4AFF8C]"
-                            onClick={(e) => {
-                              e.stopPropagation()
-                              setSelectedTrackForComment(track.musicId)
-                              setIsCommentModalOpen(true)
-                            }}>
-                            <MessageSquare size={20} />
-                          </button>
-                        </>
-                        ) : null
-                      }
+                          <>
+                            <button className="p-2 hover:text-[#4AFF8C]">
+                              <Bookmark size={20} />
+                            </button>
+                            <button className="p-2 hover:text-[#4AFF8C]">
+                              <Download size={20} />
+                            </button>
+                            <button
+                                className="p-2 hover:text-[#4AFF8C]"
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  setSelectedTrackForComment(track.musicId)
+                                  setIsCommentModalOpen(true)
+                                }}
+                            >
+                              <MessageSquare size={20} />
+                            </button>
+                          </>
+                      ) : null}
                     </div>
-                    <span className="text-sm text-gray-400 w-16 text-right">{track.duration}</span>
                   </div>
 
                   {/* 트랙 아이템 닫는 div 바로 위에 추가 */}
                   {isPlaying && currentTrackId === track.musicId && showComments && (
                       <div className="mt-4 pl-20">
                         <AnimatePresence mode="wait">
-                          {currentComment && (
+                          {isLoadingComments ? (
+                              <motion.div
+                                  key="loading"
+                                  initial={{ opacity: 0, y: 20 }}
+                                  animate={{ opacity: 1, y: 0 }}
+                                  exit={{ opacity: 0, y: -20 }}
+                                  transition={{ duration: 0.3 }}
+                                  className="bg-[#333] rounded-lg p-3"
+                              >
+                                <div className="flex items-center justify-center">
+                                  <div className="w-5 h-5 border-2 border-[#4AFF8C] border-t-transparent rounded-full animate-spin"></div>
+                                  <span className="ml-2 text-sm text-gray-300">댓글 로딩 중...</span>
+                                </div>
+                              </motion.div>
+                          ) : currentComment ? (
                               <motion.div
                                   key={currentComment.id}
                                   initial={{ opacity: 0, y: 20 }}
@@ -287,6 +373,17 @@ export default function MusicPlayer() {
                                     <p className="text-sm text-gray-300 mt-1">{currentComment.text}</p>
                                   </div>
                                 </div>
+                              </motion.div>
+                          ) : (
+                              <motion.div
+                                  key="no-comments"
+                                  initial={{ opacity: 0, y: 20 }}
+                                  animate={{ opacity: 1, y: 0 }}
+                                  exit={{ opacity: 0, y: -20 }}
+                                  transition={{ duration: 0.3 }}
+                                  className="bg-[#333] rounded-lg p-3"
+                              >
+                                <p className="text-sm text-gray-300">아직 댓글이 없습니다. 첫 댓글을 남겨보세요!</p>
                               </motion.div>
                           )}
                         </AnimatePresence>
@@ -339,16 +436,18 @@ export default function MusicPlayer() {
 
                 <div className="flex items-center gap-4">
                   {accessToken ? (
-                  <>
-                    <button className="p-2 hover:text-[#4AFF8C]">
-                      <Bookmark size={20} />
-                    </button>
-                    <button className="p-2 hover:text-[#4AFF8C]">
-                      <Share2 size={20} />
-                    </button>
-                  </>
-                    ) : null
-                  }
+                      <>
+                        <button className="p-2 hover:text-[#4AFF8C]">
+                          <Volume2 size={20} />
+                        </button>
+                        <button className="p-2 hover:text-[#4AFF8C]">
+                          <Bookmark size={20} />
+                        </button>
+                        <button className="p-2 hover:text-[#4AFF8C]">
+                          <Share2 size={20} />
+                        </button>
+                      </>
+                  ) : null}
                   <button className="p-2 hover:text-[#4AFF8C]" onClick={() => setPlayerBarVisible(false)}>
                     <X size={20} />
                   </button>
@@ -395,7 +494,7 @@ export default function MusicPlayer() {
                     <div>
                       <h3 className="text-2xl font-bold text-white">댓글 작성</h3>
                       <p className="text-gray-400 text-sm mt-1">
-                        {musicTracks.find((t) => t.id === selectedTrackForComment)?.title || ""}
+                        {musicTracks.find((t) => t.musicId === selectedTrackForComment)?.title || ""}
                       </p>
                     </div>
                     <button
@@ -409,7 +508,10 @@ export default function MusicPlayer() {
                   {/* 트랙 정보 */}
                   <div className="flex items-center gap-4 p-4 bg-[#333] rounded-lg mb-6 relative z-10">
                     <Image
-                        src={musicTracks.find((t) => t.id === selectedTrackForComment)?.profileImageUrl || "/placeholder.svg"}
+                        src={
+                            musicTracks.find((t) => t.musicId === selectedTrackForComment)?.profileImageUrl ||
+                            "https://cdn-icons-png.flaticon.com/512/64/64572.png"
+                        }
                         alt="Track"
                         width={60}
                         height={60}
@@ -417,26 +519,26 @@ export default function MusicPlayer() {
                     />
                     <div>
                       <h4 className="font-medium text-white">
-                        {musicTracks.find((t) => t.id === selectedTrackForComment)?.title || ""}
+                        {musicTracks.find((t) => t.musicId === selectedTrackForComment)?.title || ""}
                       </h4>
                       <p className="text-sm text-gray-400">
-                        {musicTracks.find((t) => t.id === selectedTrackForComment)?.nickname || ""}
+                        {musicTracks.find((t) => t.musicId === selectedTrackForComment)?.nickname || ""}
                       </p>
                       <div className="flex items-center gap-2 mt-1">
                     <span className="text-xs text-[#4AFF8C]">
-                      {musicTracks.find((t) => t.id === selectedTrackForComment)?.duration || ""}
+                      {musicTracks.find((t) => t.musicId === selectedTrackForComment)?.duration || ""}
                     </span>
                         <span className="text-xs text-gray-500">•</span>
                         <span className="text-xs text-gray-400">
-                      {sampleComments[selectedTrackForComment]?.length || 0} 댓글
+                      {trackComments[selectedTrackForComment]?.length || 0} 댓글
                     </span>
                       </div>
                     </div>
                   </div>
 
                   {/* 댓글 목록 */}
-                  {selectedTrackForComment && sampleComments[selectedTrackForComment] && (
-                      <div className="mb-6 max-h-[200px] overflow-y-auto custom-scrollbar relative z-10">
+                  {selectedTrackForComment && trackComments[selectedTrackForComment] && (
+                      <div className="mb-6 max-h-[200px] overflow-y-auto scrollbar-hide relative z-10">
                         <div className="flex justify-between items-center mb-3">
                           <h4 className="text-sm font-medium text-gray-300">최근 댓글</h4>
                           <button
@@ -447,33 +549,41 @@ export default function MusicPlayer() {
                           </button>
                         </div>
 
-                        {(allComments
-                                ? sampleComments[selectedTrackForComment]
-                                : sampleComments[selectedTrackForComment].slice(0, 2)
-                        ).map((comment) => (
-                            <div key={comment.id} className="bg-[#2A2A2A] rounded-lg p-3 mb-2">
-                              <div className="flex items-start justify-between">
-                                <div className="flex items-start gap-3">
-                                  <div className="w-8 h-8 rounded-full bg-[#333] flex items-center justify-center text-[#4AFF8C]">
-                                    {comment.user.charAt(0)}
-                                  </div>
-                                  <div>
-                                    <div className="flex items-center gap-2">
-                                      <span className="text-[#4AFF8C] font-medium">{comment.user}</span>
-                                      <span className="text-xs text-gray-500">{comment.timestamp}</span>
-                                    </div>
-                                    <p className="text-sm text-gray-300 mt-1">{comment.text}</p>
-                                    <div className="flex items-center gap-2 mt-2">
-                                      <button className="flex items-center gap-1 text-xs text-gray-400 hover:text-[#4AFF8C]">
-                                        <Heart size={12} />
-                                        <span>{comment.likes}</span>
-                                      </button>
+                        {trackComments[selectedTrackForComment].length > 0 ? (
+                            (allComments
+                                    ? trackComments[selectedTrackForComment]
+                                    : trackComments[selectedTrackForComment].slice(0, 2)
+                            ).map((comment) => (
+                                <div key={comment.id} className="bg-[#2A2A2A] rounded-lg p-3 mb-2">
+                                  <div className="flex items-start justify-between">
+                                    <div className="flex items-start gap-3">
+                                      <div className="w-8 h-8 rounded-full bg-[#333] flex items-center justify-center text-[#4AFF8C]">
+                                        {comment.user.charAt(0)}
+                                      </div>
+                                      <div>
+                                        <div className="flex items-center gap-2">
+                                          <span className="text-[#4AFF8C] font-medium">{comment.user}</span>
+                                          {comment.timestamp && (
+                                              <span className="text-xs text-gray-500">{comment.timestamp}</span>
+                                          )}
+                                        </div>
+                                        <p className="text-sm text-gray-300 mt-1">{comment.text}</p>
+                                        <div className="flex items-center gap-2 mt-2">
+                                          <button className="flex items-center gap-1 text-xs text-gray-400 hover:text-[#4AFF8C]">
+                                            <Heart size={12} />
+                                            <span>{comment.likes}</span>
+                                          </button>
+                                        </div>
+                                      </div>
                                     </div>
                                   </div>
                                 </div>
-                              </div>
+                            ))
+                        ) : (
+                            <div className="bg-[#2A2A2A] rounded-lg p-3 text-center">
+                              <p className="text-sm text-gray-400">아직 댓글이 없습니다. 첫 댓글을 남겨보세요!</p>
                             </div>
-                        ))}
+                        )}
                       </div>
                   )}
 
@@ -502,7 +612,7 @@ export default function MusicPlayer() {
 
                               {/* 이모지 선택기 */}
                               {showEmojiPicker && (
-                                  <div className="absolute bottom-full right-0 mb-2 bg-[#2A2A2A] border border-[#444] rounded-lg p-2 shadow-xl">
+                                  <div className="absolute top-0 right-0 transform -translate-y-[120%] bg-[#2A2A2A] border border-[#444] rounded-lg p-2 shadow-xl z-50">
                                     <div className="grid grid-cols-5 gap-2">
                                       {emojiOptions.map((emoji, index) => (
                                           <button
@@ -540,29 +650,7 @@ export default function MusicPlayer() {
                         취소
                       </button>
                       <button
-                          onClick={() => {
-                            // 댓글 추가 로직
-                            if (commentText.trim() && selectedTrackForComment) {
-                              // 실제 구현에서는 API 호출 등으로 댓글 저장
-                              const newComment = {
-                                id: Date.now(),
-                                user: "사용자",
-                                text: commentText,
-                                timestamp: formatTime(currentTime),
-                                likes: 0,
-                              }
-
-                              // 샘플 댓글에 추가 (실제 구현에서는 상태 업데이트 또는 API 호출)
-                              console.log("새 댓글:", newComment)
-
-                              // 모달 닫기 및 상태 초기화
-                              setCommentText("")
-                              setIsCommentModalOpen(false)
-
-                              // 댓글 작성 후 댓글 표시 활성화
-                              setShowComments(true)
-                            }
-                          }}
+                          onClick={addComment}
                           className={`px-6 py-2 rounded-lg font-medium flex items-center gap-2 ${
                               commentText.trim()
                                   ? "bg-gradient-to-r from-[#4AFF8C] to-[#3de07d] text-black hover:from-[#3de07d] hover:to-[#32c06a]"
@@ -579,7 +667,6 @@ export default function MusicPlayer() {
               </motion.div>
           )}
         </AnimatePresence>
-
       </div>
   )
 }

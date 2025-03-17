@@ -120,14 +120,13 @@ export default function UploadModal({ isOpen, onClose }) {
       sendFormData.append("tags", formData.tags);
       sendFormData.append("title", formData.title);
 
-      const response = await fetchFileWithAuth("/music/upload", {
+      const response = await fetchFileWithAuth("/music/auth/upload", {
         method: "POST",
         body: sendFormData,
       });
 
       // JSON 응답을 파싱
       const result = await response;
-      console.log(result);
 
       if (result.code === 0) {
         alert('업로드 성공');

@@ -6,6 +6,7 @@ import { Search, Bell, Upload, Menu, X, Music, User, LogOut, Settings, LogIn } f
 import Image from "next/image"
 import Link from "next/link"
 import UploadModal from "@/pages/components/UploadModal";
+import {tokenClear} from "@/pages/common/fetch";
 
 export default function Header() {
   const router = useRouter()
@@ -15,37 +16,7 @@ export default function Header() {
   const [activeMenu, setActiveMenu] = useState(null)
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false)
   const [accessToken, setAccessToken] = useState(null)
-
-  // 컴포넌트 마운트 시 로컬 스토리지에서 토큰 확인
-  useEffect(() => {
-    const token = localStorage.getItem("access_token")
-    setAccessToken(token)
-    console.log(token);
-
-    // const checkLogin = async () => {
-    //   try {
-    //     const response = await fetch("http://localhost:8080/login/check", {
-    //       headers: {
-    //         Authorization: `Bearer ${token}`,
-    //       },
-    //     });
-    //
-    //     // JSON 응답을 파싱
-    //     const result = await response.json();
-    //
-    //     console.log('로그인 체크1')
-    //     console.log(result)
-    //     if (result.code === 0) {
-    //       console.log('로그인 체크2')
-    //       setAccessToken(token)
-    //     }
-    //   } catch (error) {
-    //   }
-    // };
-    //
-    // checkLogin();
-  }, [router.query]);
-
+  const [baseUrl, setBaseUrl] = useState(null)
 
   const toggleMenu = () => setIsMenuOpen(!isMenuOpen)
   const toggleProfile = () => setIsProfileOpen(!isProfileOpen)
@@ -59,10 +30,14 @@ export default function Header() {
 
   const closeUploadModal = () => setIsUploadModalOpen(false)
 
+  const handleLogin = () => {
+    window.location.href = '/login'; // 로그인 화면으로 이동
+  }
+
   const handleLogout = () => {
-    localStorage.removeItem("access_token")
-    setAccessToken(null)
-    setIsProfileOpen(false)
+    console.log("logout")
+    tokenClear();
+    window.location.href = '/main/home'; // 로그아웃 후 홈 화면으로 이동
   }
 
   const menuItems = [
@@ -86,6 +61,13 @@ export default function Header() {
   ]
 
   const themeClass = isDarkMode ? "bg-black text-white border-gray-800" : "bg-white text-black border-gray-200"
+
+  // 컴포넌트 마운트 시 로컬 스토리지에서 토큰 확인
+  useEffect(() => {
+    const token = localStorage.getItem("access_token")
+    setAccessToken(token)
+    console.log(token);
+  }, [router.query]);
 
   return (
       <>
@@ -140,7 +122,7 @@ export default function Header() {
                       <div
                           className={`w-8 h-8 rounded-full overflow-hidden border-2 ${isDarkMode ? "border-white" : "border-black"}`}
                       >
-                        <Image src="/placeholder.svg?height=32&width=32" alt="Profile" width={32} height={32} />
+                        <Image src="https://cdn-icons-png.flaticon.com/512/64/64572.png" alt="Profile" width={32} height={32} />
                       </div>
                     </button>
 
@@ -156,21 +138,19 @@ export default function Header() {
                                   <User className="mr-2 h-4 w-4" />
                                   <span>프로필</span>
                                 </a>
-                                <a href="#" className="flex items-center px-4 py-2 text-sm hover:bg-gray-800 hover:text-white">
-                                  <LogOut className="mr-2 h-4 w-4" />
+                                <a href="#" className="flex items-center px-4 py-2 text-sm hover:bg-gray-800 hover:text-white" onClick={handleLogout}>
+                                  <LogOut className="mr-2 h-4 w-4" onClick={handleLogout} />
                                   <span>로그아웃</span>
                                 </a>
                               </>
                           ) : (
-                              <a href="http://localhost:3000/login" className="flex items-center px-4 py-2 text-sm hover:bg-gray-800 hover:text-white">
+                              <a href="#" className="flex items-center px-4 py-2 text-sm hover:bg-gray-800 hover:text-white" onClick={handleLogin}>
                                 <LogIn className="mr-2 h-4 w-4" />
                                 <span>로그인</span>
                               </a>
                           )}
                         </div>
                     )}
-
-
                   </div>
               </div>
             </div>
@@ -252,7 +232,28 @@ export default function Header() {
                             <span>로그아웃</span>
                           </button>
                         </>
-                    ) : null}
+                    ) :
+                        <>
+                          <a
+                              href="#"
+                              className={`flex items-center px-3 py-2 rounded-md ${
+                                  isDarkMode ? "hover:bg-gray-800" : "hover:bg-gray-200"
+                              } transition-colors`}
+                          >
+                            <User className="h-5 w-5 mr-3" />
+                            <span>프로필</span>
+                          </a>
+                          <button
+                              onClick={handleLogout}
+                              className={`flex items-center w-full text-left px-3 py-2 rounded-md ${
+                                  isDarkMode ? "hover:bg-gray-800" : "hover:bg-gray-200"
+                              } transition-colors`}
+                          >
+                            <LogOut className="h-5 w-5 mr-3" />
+                            <span>로그아웃</span>
+                          </button>
+                        </>
+                    }
                   </div>
                 </div>
             )}

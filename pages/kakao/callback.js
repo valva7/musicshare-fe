@@ -8,6 +8,8 @@ export default function KakaoCallback() {
   const [error, setError] = useState(null)
   const router = useRouter()
 
+  const BASE_URL_BACK = process.env.NEXT_PUBLIC_BASE_URL_BACK;
+
   useEffect(() => {
     const { code, error: kakaoError } = router.query;
 
@@ -15,7 +17,7 @@ export default function KakaoCallback() {
     if (code) {
       const exchangeCodeForToken = async () => {
         try {
-          const response = await fetch(`http://localhost:8080/auth/kakao-token?code=${code}`, {
+          const response = await fetch(`${BASE_URL_BACK}/auth/kakao-token?code=${code}`, {
             method: "POST",
             headers: {
               "Content-Type": "application/json",

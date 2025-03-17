@@ -1,151 +1,173 @@
-const BASE_URL = 'http://localhost:8080'
+export const BASE_URL_BACK = process.env.NEXT_PUBLIC_BASE_URL_BACK
+export const BASE_URL_FRONT = process.env.NEXT_PUBLIC_BASE_URL_FRONT
+
 
 // 토큰을 로컬스토리지에서 가져오는 함수
 const getAccessToken = () => localStorage.getItem('access_token');
 const getRefreshToken = () => localStorage.getItem('refresh_token');
 
-// Post Fetch
-export const postWithAuthFetch = async (router, url, options = {}) => {
+
+export const getWithAuthFetch = async (url) => {
   let accessToken = getAccessToken();
 
-  // Header
-  const headers = {
-    ...options.headers,
-    method: "POST",
-    Authorization: `Bearer ${accessToken}`,
-  };
+  let response = await fetch(`${BASE_URL_BACK}${url}`, {
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${accessToken}`,
+    },
+  })
 
-  try {
-    // API 호출
-    let response = await fetch(BASE_URL + url, {...options, headers});
+  // 응답 본문을 읽기 위해 클론하여 두 번 읽을 수 있도록 처리
+  const clonedResponse = response.clone();
 
-    // 응답 본문을 읽기 위해 클론하여 두 번 읽을 수 있도록 처리
-    const clonedResponse = response.clone();
+  // JSON 응답을 파싱
+  const result = await clonedResponse.json();
 
-    // JSON 응답을 파싱
-    const result = await clonedResponse.json();
+  // 액세스 토큰 만료 시, 새로운 액세스 토큰을 발급
+  if (result.code === 401) {
+    accessToken = await refreshAccessToken();
 
-    if (result.code === 401) {
-      // 액세스 토큰 만료 시, 새로운 액세스 토큰을 발급
-      accessToken = await refreshAccessToken();
-      headers.Authorization = `Bearer ${accessToken}`;
-
-      // 액세스 토큰 갱신 후, 다시 요청
-      response = await fetch(`${BASE_URL}${url}`, { ...options, headers });
-    }
-
-    // 최종 응답 본문 반환
-    return await response.json();
-  } catch (error) {
-    console.error("Fetch error:", error);
-    throw error;
-  }
-}
-
-// Get Fetch
-export const getWithAuthFetch = async (url, options = {}) => {
-  let accessToken = getAccessToken();
-
-  // Header
-  const headers = {
-    ...options.headers,
-    method: "GET",
-    Authorization: `Bearer ${accessToken}`,
-  };
-
-  try {
-    // API 호출
-    let response = await fetch(`${BASE_URL}${url}`, {...options, headers});
-
-    // 응답 본문을 읽기 위해 클론하여 두 번 읽을 수 있도록 처리
-    const clonedResponse = response.clone();
-
-    // JSON 응답을 파싱
-    const result = await clonedResponse.json();
-
-    if (result.code === 401) {
-      // 액세스 토큰 만료 시, 새로운 액세스 토큰을 발급
-      accessToken = await refreshAccessToken();
-      headers.Authorization = `Bearer ${accessToken}`;
-
-      // 액세스 토큰 갱신 후, 다시 요청
-      response = await fetch(`${BASE_URL}${url}`, { ...options, headers });
-    }
-
-    // 최종 응답 본문 반환
-    return await response.json();
-  } catch (error) {
-    console.error("Fetch error:", error);
-    throw error;
-  }
-}
-
-// Authorization 헤더를 포함하여 요청을 보냄 (multipart/form-data)
-export const fetchFileWithAuth = async (url, options = {}) => {
-  let accessToken = getAccessToken();
-
-  // Header
-  const headers = {
-    ...options.headers,
-    Authorization: `Bearer ${accessToken}`,
-  };
-
-  try {
-    // API 호출
-    let response = await fetch(BASE_URL + url, {...options, headers});
-
-    // 응답 본문을 읽기 위해 클론하여 두 번 읽을 수 있도록 처리
-    const clonedResponse = response.clone();
-
-    // JSON 응답을 파싱
-    const result = await clonedResponse.json();
-
-    if (result.code === 401) {
-      // 액세스 토큰 만료 시, 새로운 액세스 토큰을 발급
-      accessToken = await refreshAccessToken();
-      headers.Authorization = `Bearer ${accessToken}`;
-
-      // 액세스 토큰 갱신 후, 다시 요청
-      response = await fetch(`${BASE_URL}${url}`, { ...options, headers });
-    }
-
-    // 최종 응답 본문 반환
-    return await response.json();
-  } catch (error) {
-    console.error("Fetch error:", error);
-    throw error;
-  }
-};
-
-// 액세스 토큰 갱신 함수
-const refreshAccessToken = async () => {
-  try {
-    const response = await fetch(`${BASE_URL}/auth/refresh`, {
-      method: 'POST',
+    response = await fetch(`${BASE_URL_BACK}${url}`, {
       headers: {
-        'Content-Type': 'application/json',
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${accessToken}`,
       },
-      body: JSON.stringify({
-        refreshToken: getRefreshToken()
-      }),
-    });
-
-    if (response.code !== 0) {
-      throw new Error('Refresh token expired');
-    }
-
-    const result = await response.json();
-    localStorage.setItem('access_token', result.value.accessToken);
-
-    return result.value.accessToken;
-  } catch (error) {
-    console.error('Failed to refresh token:', error);
-    localStorage.removeItem('access_token');
-    localStorage.removeItem('refresh_token');
-    window.location.href = '/login'; // 로그아웃 후 로그인 페이지로 리다이렉트
-    throw error;
+    })
   }
-};
+
+  return response.json()
+}
+
+export const getWithoutAuthFetch = async (url) => {
+  let accessToken = getAccessToken();
+
+  let response = await fetch(`${BASE_URL_BACK}${url}`, {
+    headers: {
+      "Content-Type": "application/json",
+    },
+  })
+
+  // 응답 본문을 읽기 위해 클론하여 두 번 읽을 수 있도록 처리
+  const clonedResponse = response.clone();
+
+  // JSON 응답을 파싱
+  const result = await clonedResponse.json();
+
+  // 액세스 토큰 만료 시, 새로운 액세스 토큰을 발급
+  if (result.code === 401) {
+    accessToken = await refreshAccessToken();
+
+    response = await fetch(`${BASE_URL_BACK}${url}`, {
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${accessToken}`,
+      },
+    })
+  }
+
+  return response.json()
+}
+
+export const getWithAuthAndParamsFetch = async (url, params) => {
+  let accessToken = getAccessToken();
+  const queryString = new URLSearchParams(params).toString()
+
+  let response = await fetch(`${BASE_URL_BACK}${url}?${queryString}`, {
+    method: "GET",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${accessToken}`,
+    },
+  })
+
+  // 응답 본문을 읽기 위해 클론하여 두 번 읽을 수 있도록 처리
+  const clonedResponse = response.clone();
+
+  // JSON 응답을 파싱
+  const result = await clonedResponse.json();
+
+  // 액세스 토큰 만료 시, 새로운 액세스 토큰을 발급
+  if (result.code === 401) {
+    accessToken = await refreshAccessToken();
+
+    response = await fetch(`${BASE_URL_BACK}${url}?${queryString}`, {
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${accessToken}`,
+      },
+    })
+  }
+
+  return response.json()
+}
+
+export const postWithAuthFetch = async (url, data) => {
+  let accessToken = getAccessToken();
+
+  let response = await fetch(`${BASE_URL_BACK}${url}`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${accessToken}`,
+    },
+    body: JSON.stringify(data),
+  })
+
+  // 응답 본문을 읽기 위해 클론하여 두 번 읽을 수 있도록 처리
+  const clonedResponse = response.clone();
+
+  // JSON 응답을 파싱
+  const result = await clonedResponse.json();
+
+  // 액세스 토큰 만료 시, 새로운 액세스 토큰을 발급
+  if (result.code === 401) {
+    accessToken = await refreshAccessToken();
+
+    response = await fetch(`${BASE_URL_BACK}${url}`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${accessToken}`,
+      },
+      body: JSON.stringify(data),
+    })
+  }
+
+  return response.json()
+}
+
+export const fetchFileWithAuth = async (url, options) => {
+  let accessToken = getAccessToken();
+
+  let response = await fetch(`${BASE_URL_BACK}${url}`, {
+    ...options,
+    headers: {
+      ...options.headers,
+      Authorization: `Bearer ${accessToken}`,
+    },
+  })
+
+  // 응답 본문을 읽기 위해 클론하여 두 번 읽을 수 있도록 처리
+  const clonedResponse = response.clone();
+
+  // JSON 응답을 파싱
+  const result = await clonedResponse.json();
+
+  // 액세스 토큰 만료 시, 새로운 액세스 토큰을 발급
+  if (result.code === 401) {
+    accessToken = await refreshAccessToken();
+
+    response = await fetch(`${BASE_URL_BACK}${url}`, {
+      ...options,
+      headers: {
+        ...options.headers,
+        Authorization: `Bearer ${accessToken}`,
+      },
+    })
+  }
+
+  return response.json()
+}
 
 // login check
 export const loginCheckFetch = async () => {
@@ -159,7 +181,7 @@ export const loginCheckFetch = async () => {
 
   try {
     // Header
-    const response = await fetch(BASE_URL + '/auth/check', {headers});
+    const response = await fetch(BASE_URL_BACK + '/auth/check', {headers});
 
     // JSON 응답을 파싱
     const result = await response.json();
@@ -172,3 +194,37 @@ export const loginCheckFetch = async () => {
     throw error;
   }
 };
+
+// 액세스 토큰 갱신 함수
+const refreshAccessToken = async () => {
+  try {
+    const response = await fetch(`${BASE_URL_BACK}/auth/refresh`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        refreshToken: getRefreshToken()
+      }),
+    });
+
+    if (response.code !== 0) {
+      tokenClear();
+      window.location.href = '/login'; // 로그아웃 후 로그인 페이지로 리다이렉트
+    }
+
+    const result = await response.json();
+    localStorage.setItem('access_token', result.value.accessToken);
+
+    return result.value.accessToken;
+  } catch (error) {
+    tokenClear();
+    window.location.href = '/login'; // 로그아웃 후 로그인 페이지로 리다이렉트
+    throw error;
+  }
+};
+
+export const tokenClear = () => {
+  localStorage.removeItem('access_token');
+  localStorage.removeItem('refresh_token');
+}

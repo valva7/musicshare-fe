@@ -10,9 +10,10 @@ export default function KakaoLogin() {
     loginCheckFetch();
   }, []);
 
-  // 카카오 개발자 앱 키 선언
-  const REST_API_KEY = "b5b4e67b3c1c519d3dd172cdc4cd5cc8"; // RestAPI 키
-  const REDIRECT_URI = "http://localhost:3000/kakao/callback"; // redirect 주소
+  const BASE_URL_FRONT = process.env.NEXT_PUBLIC_BASE_URL_FRONT;
+
+  const REST_API_KEY = process.env.NEXT_PUBLIC_KAKAO_LOGIN_API_KEY;
+  const REDIRECT_URI = `${BASE_URL_FRONT}/kakao/callback`; // redirect 주소
   const KAKAO_AUTH_URI = `https://kauth.kakao.com/oauth/authorize?client_id=${REST_API_KEY}&redirect_uri=${REDIRECT_URI}&response_type=code`;
 
   return (
