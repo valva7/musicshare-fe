@@ -24,7 +24,7 @@ import {
   getWithAuthFetch,
   postWithAuthFetch,
   getWithAuthAndParamsFetch,
-  getWithoutAuthFetch
+  getWithoutAuthFetch, getWithoutAuthAndParamFetch
 } from "@/pages/common/fetch"
 
 // 이모지 선택 옵션
@@ -52,6 +52,20 @@ export default function MusicPlayer() {
   const [showEmojiPicker, setShowEmojiPicker] = useState(false)
   const [allComments, setAllComments] = useState(false)
 
+  // 장르 관련 상태
+  const [showGenres, setShowGenres] = useState(false)
+  const [selectedGenre, setSelectedGenre] = useState(null)
+  const [genres] = useState([
+    { id: "dance", name: "댄스" },
+    { id: "hiphop", name: "힙합" },
+    { id: "rnb", name: "R&B" },
+    { id: "rock", name: "락" },
+    { id: "ballad", name: "발라드" },
+    { id: "indie", name: "인디" },
+    { id: "classical", name: "클래식" },
+    { id: "trot", name: "트로트" },
+    { id: "electronic", name: "일렉트로닉" },
+  ])
   // Tracks
   const [musicTracks, setMusicTracks] = useState([])
   // Comments
@@ -72,7 +86,6 @@ export default function MusicPlayer() {
       // 현재 재생 중인 트랙을 다시 클릭하면 일시정지
       audioRef.current.pause()
       setIsPlaying(false)
-      // 일시정지 상태에서도 현재 시간 유지
     } else {
       // 다른 트랙을 클릭하거나 일시정지된 트랙을 다시 재생
       if (currentTrackId !== trackId) {
@@ -82,7 +95,7 @@ export default function MusicPlayer() {
         setCurrentTime(0) // 새 트랙은 처음부터 시작
         setCurrentCommentIndex(0) // 댓글 인덱스 초기화
 
-        // 새 트랙의 댓글 로드
+        // 트랙의 댓글 로드
         await loadTrackComments(trackId)
       }
 
@@ -101,7 +114,7 @@ export default function MusicPlayer() {
     try {
       setIsLoadingComments(true)
       const params = { musicId: trackId }
-      const result = await getWithAuthAndParamsFetch("/comment", params)
+      const result = await getWithAuthAndParamsFetch("/comment/public", params)
 
       if (result && Array.isArray(result.value)) {
         setTrackComments((prev) => ({
@@ -176,7 +189,7 @@ export default function MusicPlayer() {
         }
 
         // 댓글 저장
-        const response = await postWithAuthFetch("/comment", newComment)
+        const response = await postWithAuthFetch("/comment/auth", newComment)
 
         if (response && response.code === 0) {
           // 댓글 추가 성공 시 해당 트랙의 댓글 다시 로드
@@ -202,7 +215,11 @@ export default function MusicPlayer() {
   useEffect(() => {
     const getTracks = async () => {
       try {
-        const result = await getWithoutAuthFetch("/music/public/hot/current", {})
+        let params = null;
+        if (selectedGenre !== null){
+            params = { genre: selectedGenre }
+        }
+        const result = await getWithoutAuthAndParamFetch("/music/public/hot/current", params)
         if (result && result.value) {
           setMusicTracks(result.value)
         }
@@ -212,7 +229,7 @@ export default function MusicPlayer() {
     }
 
     getTracks()
-  }, [])
+  }, [selectedGenre])
 
   // 액세스 토큰 확인
   useEffect(() => {
@@ -251,16 +268,64 @@ export default function MusicPlayer() {
           <div className="mb-12">
             <div className="flex items-center gap-4 mb-4">
               <div className="h-1 w-12 bg-[#4AFF8C]"></div>
-              <h1 className="text-lg">좋아요 순으로 자동 집계될 예정 ㅎㅎ</h1>
+              <h1 className="text-lg">좋아요 순으로 자동 집계</h1>
             </div>
             <h2 className="text-6xl font-bold mb-8">
               <span className="text-[#4AFF8C]">HOT</span> 10
             </h2>
             <div className="flex gap-4">
-              <span className="px-4 py-2 rounded-full border border-[#4AFF8C] text-[#4AFF8C]">3월 2주차 (개발중)</span>
-              <span className="px-4 py-2">장르별 (개발 예정)</span>
-              <span className="px-4 py-2">월간 BGM (개발 예정)</span>
+              <button
+                  className={`px-4 py-2 rounded-full ${
+                      showGenres
+                          ? "border border-gray-600 text-white hover:border-[#4AFF8C] hover:text-[#4AFF8C]"
+                          : "bg-[#4AFF8C] text-black"
+                  } transition-colors`}
+                  onClick={() => {
+                    setSelectedGenre(null);
+                    setShowGenres(false);
+                  }}
+              >
+                3월 2주차
+              </button>
+              <button
+                  className={`px-4 py-2 rounded-full ${
+                      showGenres
+                          ? "bg-[#4AFF8C] text-black"
+                          : "border border-gray-600 text-white hover:border-[#4AFF8C] hover:text-[#4AFF8C]"
+                  } transition-colors`}
+                  onClick={() => setShowGenres(true)}
+              >
+                장르별
+              </button>
             </div>
+            {/* 장르 카테고리 */}
+            {showGenres && (
+                <motion.div
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: "auto" }}
+                    exit={{ opacity: 0, height: 0 }}
+                    transition={{ duration: 0.3 }}
+                    className="mb-8 mt-8"
+                >
+                  <div className="bg-[#242424] rounded-lg p-4">
+                    <div className="flex flex-wrap gap-4">
+                      {genres.map((genre) => (
+                          <button
+                              key={genre.id}
+                              className={`px-4 py-2 rounded-full transition-colors ${
+                                  selectedGenre === genre.id ? "bg-[#4AFF8C] text-black" : "hover:text-[#4AFF8C]"
+                              }`}
+                              onClick={async () => {
+                                setSelectedGenre(genre.id);
+                              }}
+                          >
+                            {genre.name}
+                          </button>
+                      ))}
+                    </div>
+                  </div>
+                </motion.div>
+            )}
           </div>
 
           {/* Track List */}
@@ -328,6 +393,8 @@ export default function MusicPlayer() {
                             <button
                                 className="p-2 hover:text-[#4AFF8C]"
                                 onClick={(e) => {
+                                  // 새 트랙의 댓글 로드
+                                  loadTrackComments(track.musicId)
                                   e.stopPropagation()
                                   setSelectedTrackForComment(track.musicId)
                                   setIsCommentModalOpen(true)

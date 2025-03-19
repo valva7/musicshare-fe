@@ -38,32 +38,17 @@ export const getWithAuthFetch = async (url) => {
   return response.json()
 }
 
-export const getWithoutAuthFetch = async (url) => {
-  let accessToken = getAccessToken();
-
-  let response = await fetch(`${BASE_URL_BACK}${url}`, {
+export const getWithoutAuthAndParamFetch = async (url, params) => {
+  let queryString = "";
+  if (params !== null){
+    queryString = new URLSearchParams(params).toString()
+  }
+  let response = await fetch(`${BASE_URL_BACK}${url}?${queryString}`, {
+    method: "GET",
     headers: {
       "Content-Type": "application/json",
     },
   })
-
-  // 응답 본문을 읽기 위해 클론하여 두 번 읽을 수 있도록 처리
-  const clonedResponse = response.clone();
-
-  // JSON 응답을 파싱
-  const result = await clonedResponse.json();
-
-  // 액세스 토큰 만료 시, 새로운 액세스 토큰을 발급
-  if (result.code === 401) {
-    accessToken = await refreshAccessToken();
-
-    response = await fetch(`${BASE_URL_BACK}${url}`, {
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${accessToken}`,
-      },
-    })
-  }
 
   return response.json()
 }

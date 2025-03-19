@@ -42,19 +42,19 @@ export default function Header() {
 
   const menuItems = [
     {
-      title: "음악",
+      title: "음악(개발 예정)",
       submenu: ["게임", "전체보기"],
     },
     {
-      title: "효과음",
+      title: "효과음(개발 예정)",
       submenu: ["게임","전체보기"],
     },
     {
-      title: "무료",
+      title: "무료(개발 예정)",
       submenu: ["전체보기"],
     },
     {
-      title: "special에디션",
+      title: "special에디션(개발 예정)",
       isSpecial: true,
       submenu: ["devKim의 숨은명곡"],
     },
@@ -135,8 +135,12 @@ export default function Header() {
                           {accessToken ? (
                               <>
                                 <a href="#" className="flex items-center px-4 py-2 text-sm hover:bg-gray-800 hover:text-white">
+                                  <Bell className="mr-2 h-4 w-4" />
+                                  <span>알림 (개발 예정)</span>
+                                </a>
+                                <a href="#" className="flex items-center px-4 py-2 text-sm hover:bg-gray-800 hover:text-white">
                                   <User className="mr-2 h-4 w-4" />
-                                  <span>프로필</span>
+                                  <span>프로필 (개발 예정)</span>
                                 </a>
                                 <a href="#" className="flex items-center px-4 py-2 text-sm hover:bg-gray-800 hover:text-white" onClick={handleLogout}>
                                   <LogOut className="mr-2 h-4 w-4" onClick={handleLogout} />
@@ -180,39 +184,25 @@ export default function Header() {
             {isMenuOpen && (
                 <div className="md:hidden py-3 border-t border-gray-700">
                   <div className="space-y-1 px-2">
-                    <button
-                        className={`flex items-center w-full px-3 py-2 rounded-md ${
-                            isDarkMode ? "hover:bg-gray-800" : "hover:bg-gray-200"
-                        } transition-colors`}
-                    >
-                      <Bell className="h-5 w-5 mr-3" />
-                      <span>알림</span>
-                    </button>
-
-                    {accessToken && (
-                        <button
-                            onClick={openUploadModal}
-                            className={`flex items-center w-full px-3 py-2 rounded-md ${
-                                isDarkMode ? "hover:bg-gray-800" : "hover:bg-gray-200"
-                            } transition-colors`}
-                        >
-                          <Upload className="h-5 w-5 mr-3" />
-                          <span>업로드</span>
-                        </button>
-                    )}
-
-                    <button
-                        onClick={toggleTheme}
-                        className={`flex items-center w-full px-3 py-2 rounded-md ${
-                            isDarkMode ? "hover:bg-gray-800" : "hover:bg-gray-200"
-                        } transition-colors`}
-                    >
-                      <Settings className="h-5 w-5 mr-3" />
-                      <span>{isDarkMode ? "라이트 모드" : "다크 모드"}</span>
-                    </button>
-
                     {accessToken ? (
                         <>
+                          <button
+                              className={`flex items-center w-full px-3 py-2 rounded-md ${
+                                  isDarkMode ? "hover:bg-gray-800" : "hover:bg-gray-200"
+                              } transition-colors`}
+                          >
+                            <Bell className="h-5 w-5 mr-3" />
+                            <span>알림 (개발 예정)</span>
+                          </button>
+                          <button
+                              onClick={openUploadModal}
+                              className={`flex items-center w-full px-3 py-2 rounded-md ${
+                                  isDarkMode ? "hover:bg-gray-800" : "hover:bg-gray-200"
+                              } transition-colors`}
+                          >
+                            <Upload className="h-5 w-5 mr-3" />
+                            <span>업로드</span>
+                          </button>
                           <a
                               href="#"
                               className={`flex items-center px-3 py-2 rounded-md ${
@@ -220,7 +210,7 @@ export default function Header() {
                               } transition-colors`}
                           >
                             <User className="h-5 w-5 mr-3" />
-                            <span>프로필</span>
+                            <span>프로필 (개발 예정)</span>
                           </a>
                           <button
                               onClick={handleLogout}
@@ -234,23 +224,14 @@ export default function Header() {
                         </>
                     ) :
                         <>
-                          <a
-                              href="#"
-                              className={`flex items-center px-3 py-2 rounded-md ${
-                                  isDarkMode ? "hover:bg-gray-800" : "hover:bg-gray-200"
-                              } transition-colors`}
-                          >
-                            <User className="h-5 w-5 mr-3" />
-                            <span>프로필</span>
-                          </a>
                           <button
-                              onClick={handleLogout}
+                              onClick={handleLogin}
                               className={`flex items-center w-full text-left px-3 py-2 rounded-md ${
                                   isDarkMode ? "hover:bg-gray-800" : "hover:bg-gray-200"
                               } transition-colors`}
                           >
-                            <LogOut className="h-5 w-5 mr-3" />
-                            <span>로그아웃</span>
+                            <LogIn className="h-5 w-5 mr-3" />
+                            <span>로그인</span>
                           </button>
                         </>
                     }

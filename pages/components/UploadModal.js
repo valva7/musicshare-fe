@@ -115,7 +115,6 @@ export default function UploadModal({ isOpen, onClose }) {
       sendFormData.append("file", uploadedFile);
       sendFormData.append("description", formData.description);
       sendFormData.append("genre", formData.genre);
-      sendFormData.append("mood", formData.mood);
       sendFormData.append("theme", formData.theme);
       sendFormData.append("tags", formData.tags);
       sendFormData.append("title", formData.title);
@@ -148,6 +147,7 @@ export default function UploadModal({ isOpen, onClose }) {
       title: "",
       genre: "",
       tags: "",
+      theme: "",
       description: "",
     })
     setStep(1)
@@ -246,14 +246,15 @@ export default function UploadModal({ isOpen, onClose }) {
                           disabled={isUploading}
                       >
                         <option value="">장르 선택</option>
-                        <option value="pop">팝</option>
-                        <option value="rock">록</option>
+                        <option value="dance">댄스</option>
                         <option value="hiphop">힙합</option>
-                        <option value="electronic">일렉트로닉</option>
-                        <option value="jazz">재즈</option>
+                        <option value="rnb">R&B</option>
+                        <option value="rock">락</option>
+                        <option value="ballad">발라드</option>
+                        <option value="indie">인디</option>
                         <option value="classical">클래식</option>
-                        <option value="kpop">K-Pop</option>
-                        <option value="ost">OST</option>
+                        <option value="trot">트로트</option>
+                        <option value="electronic">일렉트로닉</option>
                       </select>
                     </div>
 
