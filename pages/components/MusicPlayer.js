@@ -21,11 +21,11 @@ import {
 import Image from "next/image"
 import { AnimatePresence, motion } from "framer-motion"
 import {
-  getWithAuthFetch,
   postWithAuthFetch,
   getWithAuthAndParamsFetch,
-  getWithoutAuthFetch, getWithoutAuthAndParamFetch
+  getWithoutAuthAndParamFetch
 } from "@/pages/common/fetch"
+import {router} from "next/client";
 
 // 이모지 선택 옵션
 const emojiOptions = ["👍", "❤️", "🔥", "👏", "🎵", "🎧", "✨", "😊", "🥰", "😎"]
@@ -33,8 +33,8 @@ const emojiOptions = ["👍", "❤️", "🔥", "👏", "🎵", "🎧", "✨", "
 export default function MusicPlayer() {
   // 상태 관리 부분 수정
   const [isPlaying, setIsPlaying] = useState(false)
-  const [currentTrackId, setCurrentTrackId] = useState(null)
-  const [currentTrack, setCurrentTrack] = useState(null) // 현재 재생 중인 트랙 정보
+  const [currentMusicId, setCurrentMusicId] = useState(null)
+  const [currentMusic, setCurrentMusic] = useState(null) // 현재 재생 중인 트랙 정보
   const [currentTime, setCurrentTime] = useState(0)
   const [duration, setDuration] = useState(0)
   const [playerBarVisible, setPlayerBarVisible] = useState(false) // 플레이어 바 표시 여부
@@ -48,7 +48,7 @@ export default function MusicPlayer() {
   // 상태 관리 부분에 댓글 작성 모달 관련 상태 추가
   const [isCommentModalOpen, setIsCommentModalOpen] = useState(false)
   const [commentText, setCommentText] = useState("")
-  const [selectedTrackForComment, setSelectedTrackForComment] = useState(null)
+  const [selectedMusicForComment, setSelectedMusicForComment] = useState(null)
   const [showEmojiPicker, setShowEmojiPicker] = useState(false)
   const [allComments, setAllComments] = useState(false)
 
@@ -66,11 +66,82 @@ export default function MusicPlayer() {
     { id: "trot", name: "트로트" },
     { id: "electronic", name: "일렉트로닉" },
   ])
-  // Tracks
-  const [musicTracks, setMusicTracks] = useState([])
+  // Musics
+  const [musicMusics, setMusicMusics] = useState([])
   // Comments
-  const [trackComments, setTrackComments] = useState({})
+  const [musicComments, setMusicComments] = useState({})
   const [isLoadingComments, setIsLoadingComments] = useState(false)
+
+  // 월, 주
+  const [month, setMonth] = useState('');
+  const [week, setWeek] = useState('');
+
+  useEffect(() => {
+    const today = new Date();
+    const currentMonth = today.getMonth() + 1; // getMonth()는 0부터 시작하므로 1을 더함
+    const currentWeek = getWeekOfMonth(today);
+
+    setMonth(currentMonth);
+    setWeek(currentWeek);
+  }, []);
+
+
+  // 트랙 목록 로드
+  useEffect(() => {
+    const getMusics = async () => {
+      try {
+        let params = null;
+        if (selectedGenre !== null){
+          params = { genre: selectedGenre }
+        }
+        const result = await getWithoutAuthAndParamFetch("/music/public/hot/current", params)
+        if (result && result.value) {
+          setMusicMusics(result.value)
+        }
+      } catch (error) {
+        console.error("트랙 로드 중 오류 발생:", error)
+      }
+    }
+
+    getMusics()
+  }, [selectedGenre])
+
+  // 액세스 토큰 확인
+  useEffect(() => {
+    const token = localStorage.getItem("access_token")
+    setAccessToken(token)
+  }, [])
+
+  // 댓글 순환 효과
+  useEffect(() => {
+    if (isPlaying && currentMusicId && showComments) {
+      // 이전 인터벌 클리어
+      if (commentIntervalRef.current) {
+        clearInterval(commentIntervalRef.current)
+      }
+
+      // 새로운 인터벌 설정
+      commentIntervalRef.current = setInterval(() => {
+        setCurrentCommentIndex((prevIndex) => {
+          const comments = musicComments[currentMusicId] || []
+          return comments.length > 0 ? (prevIndex + 1) % comments.length : 0
+        })
+      }, 3000) // 3초마다 댓글 변경
+    }
+
+    return () => {
+      if (commentIntervalRef.current) {
+        clearInterval(commentIntervalRef.current)
+      }
+    }
+  }, [isPlaying, currentMusicId, showComments, musicComments])
+
+  const getWeekOfMonth = (date) => {
+    const firstDay = new Date(date.getFullYear(), date.getMonth(), 1);
+    const dayOfWeek = firstDay.getDay();
+    const adjustedDate = date.getDate() + dayOfWeek - 1;
+    return Math.ceil(adjustedDate / 7);
+  };
 
   const formatTime = (time) => {
     const minutes = Math.floor(time / 60)
@@ -79,47 +150,47 @@ export default function MusicPlayer() {
   }
 
   // 트랙 재생 함수 (재생 시 댓글 로드 추가)
-  const handlePlayPause = async (trackId) => {
-    const selectedTrack = musicTracks.find((track) => track.musicId === trackId)
+  const handlePlayPause = async (musicId) => {
+    const selectedMusic = musicMusics.find((music) => music.musicId === musicId)
 
-    if (currentTrackId === trackId && isPlaying) {
+    if (currentMusicId === musicId && isPlaying) {
       // 현재 재생 중인 트랙을 다시 클릭하면 일시정지
       audioRef.current.pause()
       setIsPlaying(false)
     } else {
       // 다른 트랙을 클릭하거나 일시정지된 트랙을 다시 재생
-      if (currentTrackId !== trackId) {
+      if (currentMusicId !== musicId) {
         // 트랙이 변경되면 오디오 소스 변경
-        audioRef.current.src = selectedTrack.url
+        audioRef.current.src = selectedMusic.url
         audioRef.current.load()
         setCurrentTime(0) // 새 트랙은 처음부터 시작
         setCurrentCommentIndex(0) // 댓글 인덱스 초기화
 
         // 트랙의 댓글 로드
-        await loadTrackComments(trackId)
+        await loadMusicComments(musicId)
       }
 
       audioRef.current.play()
       setIsPlaying(true)
-      setCurrentTrackId(trackId)
-      setCurrentTrack(selectedTrack) // 현재 트랙 정보 설정
+      setCurrentMusicId(musicId)
+      setCurrentMusic(selectedMusic) // 현재 트랙 정보 설정
       setPlayerBarVisible(true) // 플레이어 바 표시
     }
   }
 
   // 특정 트랙의 댓글을 로드
-  const loadTrackComments = async (trackId) => {
-    if (!trackId) return
+  const loadMusicComments = async (musicId) => {
+    if (!musicId) return
 
     try {
       setIsLoadingComments(true)
-      const params = { musicId: trackId }
+      const params = { musicId: musicId }
       const result = await getWithAuthAndParamsFetch("/comment/public", params)
 
       if (result && Array.isArray(result.value)) {
-        setTrackComments((prev) => ({
+        setMusicComments((prev) => ({
           ...prev,
-          [trackId]: result.value.map((comment) => ({
+          [musicId]: result.value.map((comment) => ({
             id: comment.id,
             authorId: comment.authorId,
             user: comment.authorNickname,
@@ -131,11 +202,11 @@ export default function MusicPlayer() {
         }))
       } else {
         // 빈 배열로 설정하여 에러 방지
-        setTrackComments((prev) => ({ ...prev, [trackId]: [] }))
+        setMusicComments((prev) => ({ ...prev, [musicId]: [] }))
       }
     } catch (error) {
       console.error("댓글 로드 중 오류 발생:", error)
-      setTrackComments((prev) => ({ ...prev, [trackId]: [] }))
+      setMusicComments((prev) => ({ ...prev, [musicId]: [] }))
     } finally {
       setIsLoadingComments(false)
     }
@@ -146,7 +217,7 @@ export default function MusicPlayer() {
   }
 
   const handleProgressClick = (e, isMainPlayer = true) => {
-    if (!currentTrackId) return // 선택된 트랙이 없으면 무시
+    if (!currentMusicId) return // 선택된 트랙이 없으면 무시
 
     const progressBar = isMainPlayer ? progressRef.current : e.currentTarget
     const rect = progressBar.getBoundingClientRect()
@@ -158,15 +229,15 @@ export default function MusicPlayer() {
   }
 
   // 트랙별 진행 상태 계산
-  const getTrackProgress = (trackId) => {
-    if (currentTrackId !== trackId) return 0
+  const getMusicProgress = (musicId) => {
+    if (currentMusicId !== musicId) return 0
     // 재생 중이 아니더라도 현재 트랙의 진행 상태 반환
     return (currentTime / duration) * 100
   }
 
   // 현재 트랙의 댓글 가져오기
   const getCurrentComments = () => {
-    return currentTrackId && trackComments[currentTrackId] ? trackComments[currentTrackId] : []
+    return currentMusicId && musicComments[currentMusicId] ? musicComments[currentMusicId] : []
   }
 
   // 현재 표시할 댓글
@@ -180,11 +251,11 @@ export default function MusicPlayer() {
 
   // 댓글 등록
   const addComment = async () => {
-    if (commentText.trim() && selectedTrackForComment) {
+    if (commentText.trim() && selectedMusicForComment) {
       try {
         // 새로운 댓글 객체 생성
         const newComment = {
-          musicId: selectedTrackForComment,
+          musicId: selectedMusicForComment,
           content: commentText,
         }
 
@@ -193,10 +264,10 @@ export default function MusicPlayer() {
 
         if (response && response.code === 0) {
           // 댓글 추가 성공 시 해당 트랙의 댓글 다시 로드
-          await loadTrackComments(selectedTrackForComment)
+          await loadMusicComments(selectedMusicForComment)
 
           // 현재 재생 중인 트랙에 댓글을 추가한 경우 댓글 인덱스 초기화
-          if (selectedTrackForComment === currentTrackId) {
+          if (selectedMusicForComment === currentMusicId) {
             setCurrentCommentIndex(0)
           }
         }
@@ -210,56 +281,6 @@ export default function MusicPlayer() {
       setShowComments(true)
     }
   }
-
-  // 트랙 목록 로드
-  useEffect(() => {
-    const getTracks = async () => {
-      try {
-        let params = null;
-        if (selectedGenre !== null){
-            params = { genre: selectedGenre }
-        }
-        const result = await getWithoutAuthAndParamFetch("/music/public/hot/current", params)
-        if (result && result.value) {
-          setMusicTracks(result.value)
-        }
-      } catch (error) {
-        console.error("트랙 로드 중 오류 발생:", error)
-      }
-    }
-
-    getTracks()
-  }, [selectedGenre])
-
-  // 액세스 토큰 확인
-  useEffect(() => {
-    const token = localStorage.getItem("access_token")
-    setAccessToken(token)
-  }, [])
-
-  // 댓글 순환 효과
-  useEffect(() => {
-    if (isPlaying && currentTrackId && showComments) {
-      // 이전 인터벌 클리어
-      if (commentIntervalRef.current) {
-        clearInterval(commentIntervalRef.current)
-      }
-
-      // 새로운 인터벌 설정
-      commentIntervalRef.current = setInterval(() => {
-        setCurrentCommentIndex((prevIndex) => {
-          const comments = trackComments[currentTrackId] || []
-          return comments.length > 0 ? (prevIndex + 1) % comments.length : 0
-        })
-      }, 3000) // 3초마다 댓글 변경
-    }
-
-    return () => {
-      if (commentIntervalRef.current) {
-        clearInterval(commentIntervalRef.current)
-      }
-    }
-  }, [isPlaying, currentTrackId, showComments, trackComments])
 
   return (
       <div className="min-h-screen bg-[#1A1A1A] text-white p-8">
@@ -277,21 +298,21 @@ export default function MusicPlayer() {
               <button
                   className={`px-4 py-2 rounded-full ${
                       showGenres
-                          ? "border border-gray-600 text-white hover:border-[#4AFF8C] hover:text-[#4AFF8C]"
-                          : "bg-[#4AFF8C] text-black"
+                          ? "border border-gray-600 text-white cursor-pointer hover:border-[#4AFF8C] hover:text-[#4AFF8C]"
+                          : "bg-[#4AFF8C] text-black cursor-pointer"
                   } transition-colors`}
                   onClick={() => {
                     setSelectedGenre(null);
                     setShowGenres(false);
                   }}
               >
-                3월 2주차
+                {month}월 {week}주차
               </button>
               <button
                   className={`px-4 py-2 rounded-full ${
                       showGenres
-                          ? "bg-[#4AFF8C] text-black"
-                          : "border border-gray-600 text-white hover:border-[#4AFF8C] hover:text-[#4AFF8C]"
+                          ? "bg-[#4AFF8C] text-black cursor-pointer"
+                          : "border border-gray-600 text-white cursor-pointer hover:border-[#4AFF8C] hover:text-[#4AFF8C]"
                   } transition-colors`}
                   onClick={() => setShowGenres(true)}
               >
@@ -328,15 +349,15 @@ export default function MusicPlayer() {
             )}
           </div>
 
-          {/* Track List */}
+          {/* Music List */}
           <div className="space-y-4">
-            {musicTracks.map((track, index) => (
-                <div key={track.musicId} className="group bg-[#242424] hover:bg-[#2A2A2A] rounded-lg p-4 transition-colors">
+            {musicMusics.map((music, index) => (
+                <div key={music.musicId} className="group bg-[#242424] hover:bg-[#2A2A2A] rounded-lg p-4 transition-colors">
                   <div className="flex items-center gap-4">
                     <span className="text-[#4AFF8C] text-2xl font-medium w-8">{index + 1}</span>
                     <Image
-                        src={track.profileImageUrl || "https://cdn-icons-png.flaticon.com/512/64/64572.png"}
-                        alt={track.title}
+                        src={music.profileImageUrl || "https://cdn-icons-png.flaticon.com/512/64/64572.png"}
+                        alt={music.title}
                         width={48}
                         height={48}
                         className="rounded-lg"
@@ -345,13 +366,13 @@ export default function MusicPlayer() {
                       <div className="flex items-center gap-4">
                         <button
                             className="w-10 h-10 rounded-full bg-[#4AFF8C] flex items-center justify-center text-black"
-                            onClick={() => handlePlayPause(track.musicId)}
+                            onClick={() => handlePlayPause(music.musicId)}
                         >
-                          {isPlaying && currentTrackId === track.musicId ? <Pause size={20} /> : <Play size={20} />}
+                          {isPlaying && currentMusicId === music.musicId ? <Pause size={20} /> : <Play size={20} />}
                         </button>
                         <div>
-                          <h3 className="font-medium">{track.title}</h3>
-                          <p className="text-sm text-gray-400">{track.nickname}</p>
+                          <h3 className="font-medium cursor-pointer hover:text-indigo-300 hover:underline" onClick={() => {router.push(`/music/${music.musicId}`)}}>{music.title}</h3>
+                          <p className="text-sm text-gray-400 cursor-pointer hover:text-indigo-300 hover:underline">{music.nickname}</p>
                         </div>
                       </div>
 
@@ -359,24 +380,24 @@ export default function MusicPlayer() {
                       <div className="mt-4 mb-2">
                         <div className="flex items-center gap-2">
                       <span className="text-xs text-gray-400">
-                        {currentTrackId === track.musicId ? formatTime(currentTime) : "00:00"}
+                        {currentMusicId === music.musicId ? formatTime(currentTime) : "00:00"}
                       </span>
                           <div
                               className="flex-1 h-1 bg-[#333] rounded-full cursor-pointer"
-                              onClick={(e) => currentTrackId === track.musicId && handleProgressClick(e, false)}
+                              onClick={(e) => currentMusicId === music.musicId && handleProgressClick(e, false)}
                           >
                             <div
                                 className="h-full bg-[#4AFF8C] rounded-full"
-                                style={{ width: `${getTrackProgress(track.musicId)}%` }}
+                                style={{ width: `${getMusicProgress(music.musicId)}%` }}
                             ></div>
                           </div>
-                          <span className="text-xs text-gray-400">{track.duration}</span>
+                          <span className="text-xs text-gray-400">{music.duration}</span>
                         </div>
                       </div>
 
                       {/* 태그 */}
                       <div className="flex items-center gap-2 mt-2">
-                        <span className="text-xs text-gray-400">{track.mood}</span>
+                        <span className="text-xs text-gray-400">{music.mood}</span>
                       </div>
                     </div>
 
@@ -394,13 +415,13 @@ export default function MusicPlayer() {
                                 className="p-2 hover:text-[#4AFF8C]"
                                 onClick={(e) => {
                                   // 새 트랙의 댓글 로드
-                                  loadTrackComments(track.musicId)
+                                  loadMusicComments(music.musicId)
                                   e.stopPropagation()
-                                  setSelectedTrackForComment(track.musicId)
+                                  setSelectedMusicForComment(music.musicId)
                                   setIsCommentModalOpen(true)
                                 }}
                             >
-                              <MessageSquare size={20} />
+                              <MessageSquare className="cursor-pointer hover:text-[#4AFF8C] transition-colors duration-300" size={20} />
                             </button>
                           </>
                       ) : null}
@@ -408,7 +429,7 @@ export default function MusicPlayer() {
                   </div>
 
                   {/* 트랙 아이템 닫는 div 바로 위에 추가 */}
-                  {isPlaying && currentTrackId === track.musicId && showComments && (
+                  {isPlaying && currentMusicId === music.musicId && showComments && (
                       <div className="mt-4 pl-20">
                         <AnimatePresence mode="wait">
                           {isLoadingComments ? (
@@ -471,7 +492,7 @@ export default function MusicPlayer() {
                   </button>
                   <button
                       className="w-10 h-10 rounded-full bg-[#4AFF8C] flex items-center justify-center text-black"
-                      onClick={() => currentTrackId && handlePlayPause(currentTrackId)}
+                      onClick={() => currentMusicId && handlePlayPause(currentMusicId)}
                   >
                     {isPlaying ? <Pause size={20} /> : <Play size={20} />}
                   </button>
@@ -496,8 +517,8 @@ export default function MusicPlayer() {
                     <span className="text-sm">{formatTime(duration)}</span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <h4 className="font-medium">{currentTrack?.title || "선택된 트랙 없음"}</h4>
-                    <span className="text-sm text-gray-400">by {currentTrack?.nickname || ""}</span>
+                    <h4 className="font-medium">{currentMusic?.title || "선택된 트랙 없음"}</h4>
+                    <span className="text-sm text-gray-400">by {currentMusic?.nickname || ""}</span>
                   </div>
                 </div>
 
@@ -529,7 +550,7 @@ export default function MusicPlayer() {
             onTimeUpdate={handleTimeUpdate}
             onLoadedMetadata={() => setDuration(audioRef.current.duration)}
             onEnded={() => setIsPlaying(false)}
-            src={currentTrack?.url || null}
+            src={currentMusic?.url || null}
         >
           브라우저가 오디오 태그를 지원하지 않습니다.
         </audio>
@@ -561,7 +582,7 @@ export default function MusicPlayer() {
                     <div>
                       <h3 className="text-2xl font-bold text-white">댓글 작성</h3>
                       <p className="text-gray-400 text-sm mt-1">
-                        {musicTracks.find((t) => t.musicId === selectedTrackForComment)?.title || ""}
+                        {musicMusics.find((t) => t.musicId === selectedMusicForComment)?.title || ""}
                       </p>
                     </div>
                     <button
@@ -576,35 +597,35 @@ export default function MusicPlayer() {
                   <div className="flex items-center gap-4 p-4 bg-[#333] rounded-lg mb-6 relative z-10">
                     <Image
                         src={
-                            musicTracks.find((t) => t.musicId === selectedTrackForComment)?.profileImageUrl ||
+                            musicMusics.find((t) => t.musicId === selectedMusicForComment)?.profileImageUrl ||
                             "https://cdn-icons-png.flaticon.com/512/64/64572.png"
                         }
-                        alt="Track"
+                        alt="Music"
                         width={60}
                         height={60}
                         className="rounded-md"
                     />
                     <div>
                       <h4 className="font-medium text-white">
-                        {musicTracks.find((t) => t.musicId === selectedTrackForComment)?.title || ""}
+                        {musicMusics.find((t) => t.musicId === selectedMusicForComment)?.title || ""}
                       </h4>
                       <p className="text-sm text-gray-400">
-                        {musicTracks.find((t) => t.musicId === selectedTrackForComment)?.nickname || ""}
+                        {musicMusics.find((t) => t.musicId === selectedMusicForComment)?.nickname || ""}
                       </p>
                       <div className="flex items-center gap-2 mt-1">
                     <span className="text-xs text-[#4AFF8C]">
-                      {musicTracks.find((t) => t.musicId === selectedTrackForComment)?.duration || ""}
+                      {musicMusics.find((t) => t.musicId === selectedMusicForComment)?.duration || ""}
                     </span>
                         <span className="text-xs text-gray-500">•</span>
                         <span className="text-xs text-gray-400">
-                      {trackComments[selectedTrackForComment]?.length || 0} 댓글
+                      {musicComments[selectedMusicForComment]?.length || 0} 댓글
                     </span>
                       </div>
                     </div>
                   </div>
 
                   {/* 댓글 목록 */}
-                  {selectedTrackForComment && trackComments[selectedTrackForComment] && (
+                  {selectedMusicForComment && musicComments[selectedMusicForComment] && (
                       <div className="mb-6 max-h-[200px] overflow-y-auto scrollbar-hide relative z-10">
                         <div className="flex justify-between items-center mb-3">
                           <h4 className="text-sm font-medium text-gray-300">최근 댓글</h4>
@@ -616,10 +637,10 @@ export default function MusicPlayer() {
                           </button>
                         </div>
 
-                        {trackComments[selectedTrackForComment].length > 0 ? (
+                        {musicComments[selectedMusicForComment].length > 0 ? (
                             (allComments
-                                    ? trackComments[selectedTrackForComment]
-                                    : trackComments[selectedTrackForComment].slice(0, 2)
+                                    ? musicComments[selectedMusicForComment]
+                                    : musicComments[selectedMusicForComment].slice(0, 2)
                             ).map((comment) => (
                                 <div key={comment.id} className="bg-[#2A2A2A] rounded-lg p-3 mb-2">
                                   <div className="flex items-start justify-between">

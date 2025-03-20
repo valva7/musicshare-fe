@@ -3,8 +3,8 @@ export const BASE_URL_FRONT = process.env.NEXT_PUBLIC_BASE_URL_FRONT
 
 
 // 토큰을 로컬스토리지에서 가져오는 함수
-const getAccessToken = () => localStorage.getItem('access_token');
-const getRefreshToken = () => localStorage.getItem('refresh_token');
+export const getAccessToken = () => localStorage.getItem('access_token');
+export const getRefreshToken = () => localStorage.getItem('refresh_token');
 
 
 export const getWithAuthFetch = async (url) => {
@@ -38,21 +38,6 @@ export const getWithAuthFetch = async (url) => {
   return response.json()
 }
 
-export const getWithoutAuthAndParamFetch = async (url, params) => {
-  let queryString = "";
-  if (params !== null){
-    queryString = new URLSearchParams(params).toString()
-  }
-  let response = await fetch(`${BASE_URL_BACK}${url}?${queryString}`, {
-    method: "GET",
-    headers: {
-      "Content-Type": "application/json",
-    },
-  })
-
-  return response.json()
-}
-
 export const getWithAuthAndParamsFetch = async (url, params) => {
   let accessToken = getAccessToken();
   const queryString = new URLSearchParams(params).toString()
@@ -82,6 +67,21 @@ export const getWithAuthAndParamsFetch = async (url, params) => {
       },
     })
   }
+
+  return response.json()
+}
+
+export const getWithoutAuthAndParamFetch = async (url, params) => {
+  let queryString = "";
+  if (params !== null){
+    queryString = new URLSearchParams(params).toString()
+  }
+  let response = await fetch(`${BASE_URL_BACK}${url}?${queryString}`, {
+    method: "GET",
+    headers: {
+      "Content-Type": "application/json",
+    },
+  })
 
   return response.json()
 }

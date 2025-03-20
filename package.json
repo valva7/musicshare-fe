@@ -9,11 +9,13 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@wavesurfer/react": "^1.0.9",
     "framer-motion": "^12.4.10",
     "lucide-react": "^0.477.0",
     "next": "15.2.1",
     "react": "^19.0.0",
-    "react-dom": "^19.0.0"
+    "react-dom": "^19.0.0",
+    "wavesurfer.js": "^7.9.1"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
