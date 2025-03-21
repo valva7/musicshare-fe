@@ -5,6 +5,7 @@ export const BASE_URL_FRONT = process.env.NEXT_PUBLIC_BASE_URL_FRONT
 // 토큰을 로컬스토리지에서 가져오는 함수
 export const getAccessToken = () => localStorage.getItem('access_token');
 export const getRefreshToken = () => localStorage.getItem('refresh_token');
+export const getUserInfo = () => JSON.parse(localStorage.getItem('user_info'));
 
 
 export const getWithAuthFetch = async (url) => {
@@ -212,4 +213,5 @@ const refreshAccessToken = async () => {
 export const tokenClear = () => {
   localStorage.removeItem('access_token');
   localStorage.removeItem('refresh_token');
+  localStorage.removeItem('user_info');
 }

@@ -11,6 +11,8 @@
   "dependencies": {
     "@wavesurfer/react": "^1.0.9",
     "framer-motion": "^12.4.10",
+    "jsonwebtoken": "^9.0.2",
+    "jwt-decode": "^4.0.0",
     "lucide-react": "^0.477.0",
     "next": "15.2.1",
     "react": "^19.0.0",

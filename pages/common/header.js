@@ -1,12 +1,24 @@
 "use client"
 
-import { useState, useEffect } from "react"
-import { useRouter } from "next/router"
-import { Search, Bell, Upload, Menu, X, Music, User, LogOut, Settings, LogIn } from "lucide-react"
+import {useEffect, useState} from "react"
+import {useRouter} from "next/router"
+import {
+  Bell,
+  LogIn,
+  LogOut,
+  Menu,
+  Music,
+  Search,
+  Upload,
+  User,
+  X
+} from "lucide-react"
 import Image from "next/image"
 import Link from "next/link"
 import UploadModal from "@/pages/components/UploadModal";
 import {tokenClear} from "@/pages/common/fetch";
+import jwt from 'jsonwebtoken';
+
 
 export default function Header() {
   const router = useRouter()
@@ -16,7 +28,20 @@ export default function Header() {
   const [activeMenu, setActiveMenu] = useState(null)
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false)
   const [accessToken, setAccessToken] = useState(null)
-  const [baseUrl, setBaseUrl] = useState(null)
+
+  // 컴포넌트 마운트 시 로컬 스토리지에서 토큰 확인
+  useEffect(() => {
+    const token = localStorage.getItem("access_token")
+    setAccessToken(token)
+    console.log(token);
+
+    // 유저 정보 파싱
+    if (token) {
+      const decoded = jwt.decode(token); // 토큰 디코딩
+      localStorage.setItem("user_info", JSON.stringify(decoded));
+      console.log(decoded)
+    }
+  }, [router.query]);
 
   const toggleMenu = () => setIsMenuOpen(!isMenuOpen)
   const toggleProfile = () => setIsProfileOpen(!isProfileOpen)
@@ -60,14 +85,9 @@ export default function Header() {
     },
   ]
 
-  const themeClass = isDarkMode ? "bg-black text-white border-gray-800" : "bg-white text-black border-gray-200"
 
-  // 컴포넌트 마운트 시 로컬 스토리지에서 토큰 확인
-  useEffect(() => {
-    const token = localStorage.getItem("access_token")
-    setAccessToken(token)
-    console.log(token);
-  }, [router.query]);
+
+  const themeClass = isDarkMode ? "bg-black text-white border-gray-800" : "bg-white text-black border-gray-200"
 
   return (
       <>
@@ -108,7 +128,7 @@ export default function Header() {
                   {accessToken && (
                       <button
                           onClick={openUploadModal}
-                          className={`flex items-center space-x-2 px-4 py-2 rounded-full ${
+                          className={`flex items-center space-x-2 px-4 py-2 rounded-full cursor-pointer ${
                               isDarkMode ? "bg-white text-black hover:bg-gray-200" : "bg-black text-white hover:bg-gray-800"
                           } transition-colors`}
                       >
@@ -118,7 +138,7 @@ export default function Header() {
                   )}
 
                   <div className="relative">
-                    <button onClick={toggleProfile} className="flex items-center space-x-2">
+                    <button onClick={toggleProfile} className="flex items-center space-x-2 cursor-pointer">
                       <div
                           className={`w-8 h-8 rounded-full overflow-hidden border-2 ${isDarkMode ? "border-white" : "border-black"}`}
                       >
@@ -128,9 +148,15 @@ export default function Header() {
 
                     {isProfileOpen && (
                         <div
-                            className={`absolute right-0 mt-2 w-48 rounded-md shadow-lg py-1 ${
+                            className={`absolute right-0 mt-2 w-48 rounded-md shadow-lg py-1 z-50 ${
                                 isDarkMode ? "bg-gray-900 border border-gray-800" : "bg-white border border-gray-200"
                             }`}
+                            style={{
+                              boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
+                              backdropFilter: 'blur(0px)',
+                              WebkitBackdropFilter: 'blur(0px)',
+                              backgroundColor: isDarkMode ? 'rgba(17, 24, 39, 1)' : 'rgba(255, 255, 255, 1)'
+                            }}
                         >
                           {accessToken ? (
                               <>
@@ -156,8 +182,8 @@ export default function Header() {
                         </div>
                     )}
                   </div>
+                </div>
               </div>
-            </div>
 
               {/* Mobile menu button */}
               <div className="md:hidden flex items-center">

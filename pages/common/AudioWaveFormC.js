@@ -10,10 +10,11 @@ const AudioWaveformC = ({ audioUrl }) => {
   useEffect(() => {
     const wavesurfer = WaveSurfer.create({
       container: containerRef.current,
-      waveColor: 'rgb(103,248,115)',
-      progressColor: 'rgb(64,196,196)',
+      waveColor: 'rgb(210,206,206)',
+      progressColor: 'rgb(161,158,158)',
       minPxPerSec: 1,
-      url: audioUrl, // audioUrl을 props로 받습니다.
+      height: 50,  // 파장의 높이를 50px로 설정 (원하는 높이로 수정 가능)
+      url: audioUrl,
     });
 
     wavesurferRef.current = wavesurfer; // wavesurfer를 useRef에 저장
@@ -48,7 +49,7 @@ const AudioWaveformC = ({ audioUrl }) => {
         </button>
 
         {/* WaveSurfer 파형 컨테이너 */}
-        <div ref={containerRef} className="w-full rounded-lg shadow-md" />
+        <div ref={containerRef} className="w-full rounded-lg shadow-md"/>
       </div>
   );
 };

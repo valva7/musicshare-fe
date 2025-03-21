@@ -200,7 +200,7 @@ export default function UploadModal({ isOpen, onClose }) {
                     </p>
                     <button
                         onClick={() => fileInputRef.current.click()}
-                        className="px-4 py-2 bg-[#4AFF8C] text-black rounded-full font-medium hover:bg-[#3de07d] transition-colors"
+                        className="px-4 py-2 bg-[#4AFF8C] text-black rounded-full font-medium hover:bg-[#3de07d] transition-colors cursor-pointer"
                     >
                       파일 선택
                     </button>

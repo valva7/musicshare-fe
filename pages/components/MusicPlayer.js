@@ -26,6 +26,7 @@ import {
   getWithoutAuthAndParamFetch
 } from "@/pages/common/fetch"
 import {router} from "next/client";
+import RatingPopup from "@/pages/components/RatingPopup";
 
 // 이모지 선택 옵션
 const emojiOptions = ["👍", "❤️", "🔥", "👏", "🎵", "🎧", "✨", "😊", "🥰", "😎"]
@@ -51,6 +52,9 @@ export default function MusicPlayer() {
   const [selectedMusicForComment, setSelectedMusicForComment] = useState(null)
   const [showEmojiPicker, setShowEmojiPicker] = useState(false)
   const [allComments, setAllComments] = useState(false)
+  const [isRatingPopupOpen, setIsRatingPopupOpen] = useState(false)
+  const [userRating, setUserRating] = useState(0)
+
 
   // 장르 관련 상태
   const [showGenres, setShowGenres] = useState(false)
@@ -135,6 +139,40 @@ export default function MusicPlayer() {
       }
     }
   }, [isPlaying, currentMusicId, showComments, musicComments])
+
+  // 댓글 등록
+  // 별점 확인 처리
+  const handleRatingConfirm = async (rating) => {
+    try {
+      if (rating === 0) {
+        alert('별점을 선택하세요.');
+        return;
+      }
+
+      // 새로운 댓글 객체 생성
+      const newComment = {
+        musicId: selectedMusicForComment,
+        content: commentText,
+        rating: rating,
+      }
+      // 댓글 저장
+      const response = await postWithAuthFetch("/comment/auth", newComment)
+
+      if (response && response.code === 0) {
+        // 댓글 추가 성공 시 해당 트랙의 댓글 다시 로드
+        await loadMusicComments(selectedMusicForComment)
+      }
+
+      // 모달 닫기 및 상태 초기화
+      setCommentText("")
+      setIsCommentModalOpen(false)
+      setShowComments(true)
+    } catch (error) {
+      console.error("댓글 추가 중 오류 발생:", error)
+    }
+
+    setUserRating(0);
+  }
 
   const getWeekOfMonth = (date) => {
     const firstDay = new Date(date.getFullYear(), date.getMonth(), 1);
@@ -252,33 +290,16 @@ export default function MusicPlayer() {
   // 댓글 등록
   const addComment = async () => {
     if (commentText.trim() && selectedMusicForComment) {
-      try {
-        // 새로운 댓글 객체 생성
-        const newComment = {
-          musicId: selectedMusicForComment,
-          content: commentText,
-        }
-
-        // 댓글 저장
-        const response = await postWithAuthFetch("/comment/auth", newComment)
-
-        if (response && response.code === 0) {
-          // 댓글 추가 성공 시 해당 트랙의 댓글 다시 로드
-          await loadMusicComments(selectedMusicForComment)
-
-          // 현재 재생 중인 트랙에 댓글을 추가한 경우 댓글 인덱스 초기화
-          if (selectedMusicForComment === currentMusicId) {
-            setCurrentCommentIndex(0)
-          }
-        }
-      } catch (error) {
-        console.error("댓글 추가 중 오류 발생:", error)
+      // 별점이 선택되지 않았으면 별점 팝업 열기
+      if (userRating === 0) {
+        setIsRatingPopupOpen(true)
       }
 
-      // 모달 닫기 및 상태 초기화
-      setCommentText("")
-      setIsCommentModalOpen(false)
-      setShowComments(true)
+      // 새로운 댓글 객체 생성
+      const newComment = {
+        musicId: selectedMusicForComment,
+        content: commentText
+      }
     }
   }
 
@@ -334,7 +355,7 @@ export default function MusicPlayer() {
                           <button
                               key={genre.id}
                               className={`px-4 py-2 rounded-full transition-colors ${
-                                  selectedGenre === genre.id ? "bg-[#4AFF8C] text-black" : "hover:text-[#4AFF8C]"
+                                  selectedGenre === genre.id ? "bg-[#4AFF8C] text-black" : "hover:text-[#4AFF8C] cursor-pointer"
                               }`}
                               onClick={async () => {
                                 setSelectedGenre(genre.id);
@@ -406,10 +427,10 @@ export default function MusicPlayer() {
                       {accessToken ? (
                           <>
                             <button className="p-2 hover:text-[#4AFF8C]">
-                              <Bookmark size={20} />
+                              <Bookmark className="cursor-pointer hover:text-[#4AFF8C] transition-colors duration-300" size={20} />
                             </button>
                             <button className="p-2 hover:text-[#4AFF8C]">
-                              <Download size={20} />
+                              <Download className="cursor-pointer hover:text-[#4AFF8C] transition-colors duration-300" size={20} />
                             </button>
                             <button
                                 className="p-2 hover:text-[#4AFF8C]"
@@ -755,6 +776,14 @@ export default function MusicPlayer() {
               </motion.div>
           )}
         </AnimatePresence>
+
+        {/* 별점 팝업 */}
+        <RatingPopup
+            isOpen={isRatingPopupOpen}
+            onClose={() => setIsRatingPopupOpen(false)}
+            onRatingConfirm={handleRatingConfirm}
+            initialRating={userRating}
+        />
       </div>
   )
 }
