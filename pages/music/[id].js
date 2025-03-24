@@ -71,7 +71,10 @@ export default function MusicDetailPage({}) {
   // 별점 확인 처리
   const handleRatingConfirm = async (rating) => {
     try {
-      if (rating === 0) alert('별점을 선택하세요.'); return;
+      if (rating === 0) {
+        alert('별점을 선택하세요.');
+        return;
+      }
 
       // 새로운 댓글 객체 생성
       const newComment = {
