@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect } from "react"
 import { useRouter } from 'next/router';
 import Image from "next/image"
-import { Play, Pause, Bookmark, Download, Share2, Smile, Link, X, Heart, MessageSquare } from "lucide-react"
+import { Bookmark, Download, Share2, Heart } from "lucide-react"
 import {
   getAccessToken, getUserInfo, getWithAuthAndParamsFetch,
   getWithoutAuthAndParamFetch, postWithAuthFetch
@@ -211,9 +211,9 @@ export default function MusicDetailPage({}) {
                     </button>
                   </div>
                   <div>
-                    <p className="text-gray-400 text-sm cursor-pointer hover:text-[#4AFF8C] transition-colors duration-300">공유하기</p>
+                    <p className="text-gray-400 text-sm cursor-pointer hover:text-[#4AFF8C] transition-colors duration-300">좋아요</p>
                     <button className="text-xl text-white cursor-pointer hover:text-[#4AFF8C] transition-colors duration-300">
-                      <Share2 size={20} className="mx-auto" />
+                      <Heart size={20} className="mx-auto" />
                     </button>
                   </div>
                 </div>
