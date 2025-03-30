@@ -33,6 +33,8 @@ export default function MusicDetailPage({}) {
   const [commentText, setCommentText] = useState("")
   const [userRating, setUserRating] = useState(0)
   const [isRatingPopupOpen, setIsRatingPopupOpen] = useState(false)
+  const [like, setLike] = useState(false)
+  const [likeCount, setLikeCount] = useState(0)
 
   // 컴포넌트 마운트 시 로컬 스토리지에서 토큰 확인
   useEffect(() => {
@@ -47,6 +49,30 @@ export default function MusicDetailPage({}) {
     console.log(comments);
   }, [id])
 
+  useEffect(() => {
+    loadIsLiked(id);
+  }, [like, likeCount])
+
+  const loadIsLiked = async (musicId) => {
+    const params = { musicId: musicId }
+    const result = await getWithAuthAndParamsFetch("/like/music", params)
+
+    setLike(result.value.liked);
+    setLikeCount(result.value.likeCount)
+  }
+
+  const likeHandler = async () => {
+    if (!accessToken) {
+      alert("로그인이 필요합니다.");
+      return
+    }
+
+    setLike(like == true ? false : true);
+
+    const params = {musicId: id}
+    const result = await postWithAuthFetch("/like/music", params)
+  }
+
   const loadMusicData = async () => {
     const musicData = await getWithoutAuthAndParamFetch(`/music/public/${id}`, null);
     setMusic(musicData.value);
@@ -59,7 +85,10 @@ export default function MusicDetailPage({}) {
 
   // 댓글 등록
   const handleCommentSubmit = () => {
-    console.log(userRating)
+    if (!accessToken){
+      alert("로그인이 필요합니다.");
+      return
+    }
     if (commentText.trim()) {
       // 별점이 선택되지 않았으면 별점 팝업 열기
       if (userRating === 0) {
@@ -210,12 +239,20 @@ export default function MusicDetailPage({}) {
                       <Download size={20} className="mx-auto" />
                     </button>
                   </div>
-                  <div>
-                    <p className="text-gray-400 text-sm cursor-pointer hover:text-[#4AFF8C] transition-colors duration-300">좋아요</p>
-                    <button className="text-xl text-white cursor-pointer hover:text-[#4AFF8C] transition-colors duration-300">
-                      <Heart size={20} className="mx-auto" />
-                    </button>
-                  </div>
+                  {accessToken ? (
+                      <div>
+                        <p className="text-gray-400 text-sm cursor-pointer hover:text-[#4AFF8C] transition-colors duration-300">좋아요</p>
+                        <button
+                            className={`text-xl cursor-pointer transition-colors duration-300 ${
+                                like ? "text-[#4AFF8C]" : "text-white hover:text-[#4AFF8C]"
+                            }`}
+                            onClick={likeHandler}
+                        >
+                          <Heart size={20} className="mx-auto" fill={like ? "#4AFF8C" : "none"} />
+                        </button>
+                        <p className="text-gray-400 text-sm cursor-pointer hover:text-[#4AFF8C] transition-colors duration-300">{likeCount}</p>
+                      </div>
+                  ) : null}
                 </div>
               </div>
 
@@ -279,12 +316,15 @@ export default function MusicDetailPage({}) {
 
           {/* 댓글 섹션 */}
           <div className="bg-black rounded-xl p-6">
-            <h2 className="text-2xl font-bold mb-6">댓글</h2>
+            <h2 className="text-2xl fonㄷt-bold mb-6">댓글</h2>
 
             {/* 댓글 입력 */}
             <div className="mb-6">
               <div className="flex items-center">
-                <span className="text-gray-400 mr-2">{userInfo.nickname}</span>
+                {accessToken ? (
+                    <span className="text-gray-400 mr-2">{userInfo.nickname}</span>
+
+                ) : null}
                 <input
                     type="text"
                     value={commentText}
