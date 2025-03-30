@@ -93,16 +93,20 @@ export default function UploadModal({ isOpen, onClose }) {
       alert('제목을 입력하세요.');
       return;
     }
-    if (formData.description === ''){
-      alert('설명을 입력하세요.');
-      return;
-    }
     if (formData.genre === ''){
       alert('장르를 입력하세요.');
       return;
     }
+    if (formData.theme === ''){
+      alert('테마를 선택하세요.');
+      return;
+    }
     if (formData.tags === ''){
       alert('태그를 입력하세요.');
+      return;
+    }
+    if (formData.description === ''){
+      alert('설명을 입력하세요.');
       return;
     }
 
