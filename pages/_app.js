@@ -1,11 +1,27 @@
 import "@/styles/globals.css";
 import { useRouter } from "next/router";
 import Header from "@/pages/common/header";
+import {useEffect} from "react";
+
 
 
 export default function App({ Component, pageProps }) {
   const router = useRouter();
   const noHeaderFooter = ["/login", "/kakao/callback", "/main/post"]; // 헤더를 제외할 페이지 목록
+
+  // 서비스 워커 등록
+  useEffect(() => {
+    if ("serviceWorker" in navigator) {
+      navigator.serviceWorker
+      .register("/firebase-messaging-sw.js")
+      .then((registration) => {
+        console.log("Service Worker 등록 성공:", registration);
+      })
+      .catch((error) => {
+        console.error("Service Worker 등록 실패:", error);
+      });
+    }
+  }, []);
 
   return (
     <div className="flex">

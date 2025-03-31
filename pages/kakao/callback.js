@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { useRouter } from "next/router"
+import {initializeFirebaseMessaging} from "@/pages/common/firebase-messaging";
 
 export default function KakaoCallback() {
   const [status, setStatus] = useState("loading")
@@ -17,7 +18,12 @@ export default function KakaoCallback() {
     if (code) {
       const exchangeCodeForToken = async () => {
         try {
-          const response = await fetch(`${BASE_URL_BACK}/auth/kakao-token?code=${code}`, {
+          const fcmToken = await initializeFirebaseMessaging()
+          if (fcmToken) {
+            console.log("알림 설정 완료:", fcmToken)
+          }
+
+          const response = await fetch(`${BASE_URL_BACK}/auth/kakao-token?code=${code}&fcmToken=${fcmToken}`, {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
