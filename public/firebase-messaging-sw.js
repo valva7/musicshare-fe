@@ -16,6 +16,6 @@ self.addEventListener('push', function(event) {
     badge: 'favicon.ico'
   };
   event.waitUntil(
-      self.registration.showNotification('커뮤니티 피드 서비스 알림', options)
+      self.registration.showNotification('Melody&Voice 알림', options)
   );
 });
