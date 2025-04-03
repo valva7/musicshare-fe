@@ -122,6 +122,39 @@ export const postWithAuthFetch = async (url, data) => {
   return response.json()
 }
 
+export const postWithAuthAndParamsFetch = async (url, params) => {
+  let accessToken = getAccessToken();
+  const queryString = new URLSearchParams(params).toString()
+
+  let response = await fetch(`${BASE_URL_BACK}${url}?${queryString}`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${accessToken}`,
+    },
+  })
+
+  // 응답 본문을 읽기 위해 클론하여 두 번 읽을 수 있도록 처리
+  const clonedResponse = response.clone();
+
+  // JSON 응답을 파싱
+  const result = await clonedResponse.json();
+
+  // 액세스 토큰 만료 시, 새로운 액세스 토큰을 발급
+  if (result.code === 401) {
+    accessToken = await refreshAccessToken();
+
+    response = await fetch(`${BASE_URL_BACK}${url}?${queryString}`, {
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${accessToken}`,
+      },
+    })
+  }
+
+  return response.json()
+}
+
 export const fetchFileWithAuth = async (url, options) => {
   let accessToken = getAccessToken();
 

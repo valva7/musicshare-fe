@@ -10,6 +10,7 @@ import {
 } from "@/pages/common/fetch"
 import AudioWaveformC from "@/pages/common/AudioWaveFormC";
 import RatingPopup from "@/pages/components/RatingPopup";
+import FanButton from "@/pages/common/FanButton";
 
 
 export default function MusicDetailPage({}) {
@@ -35,6 +36,8 @@ export default function MusicDetailPage({}) {
   const [isRatingPopupOpen, setIsRatingPopupOpen] = useState(false)
   const [like, setLike] = useState(false)
   const [likeCount, setLikeCount] = useState(0)
+  // Fan 관련
+  const [isFanning, setIsFanning] = useState(false);
 
   // 컴포넌트 마운트 시 로컬 스토리지에서 토큰 확인
   useEffect(() => {
@@ -52,6 +55,19 @@ export default function MusicDetailPage({}) {
   useEffect(() => {
     loadIsLiked(id);
   }, [like, likeCount])
+
+  useEffect(() => {
+    loadFanStatus(id);
+  }, []);
+
+  const loadFanStatus = async (artistId) => {
+    if (accessToken) {
+      const params = { artistId: artistId }
+      const result = await getWithAuthAndParamsFetch("/fan", params)
+
+      setIsFanning(result.value);
+    }
+  }
 
   const loadIsLiked = async (musicId) => {
     const params = { musicId: musicId }
@@ -214,7 +230,7 @@ export default function MusicDetailPage({}) {
                 </div>
 
                 {/* 컨트롤 및 메타데이터 */}
-                <div className="grid grid-cols-6 gap-4 text-center">
+                <div className="grid grid-cols-7 gap-4 text-center">
                   <div>
                     <p className="text-gray-400 text-sm">길이</p>
                     <p className="text-xl font-medium text-white">{music.duration}</p>
@@ -240,6 +256,7 @@ export default function MusicDetailPage({}) {
                     </button>
                   </div>
                   {accessToken ? (
+                      <>
                       <div>
                         <p className="text-gray-400 text-sm cursor-pointer hover:text-[#4AFF8C] transition-colors duration-300">좋아요</p>
                         <button
@@ -252,6 +269,17 @@ export default function MusicDetailPage({}) {
                         </button>
                         <p className="text-gray-400 text-sm cursor-pointer hover:text-[#4AFF8C] transition-colors duration-300">{likeCount}</p>
                       </div>
+                        {accessToken && music?.authorId === getUserInfo().sub && (
+                            <div>
+                              <FanButton
+                                  artistId={music.authorId}
+                                  size="small"
+                                  variant="outline"
+                                  initialFanning={isFanning}
+                              />
+                            </div>
+                        )}
+                    </>
                   ) : null}
                 </div>
               </div>
