@@ -7,7 +7,7 @@ import {useEffect} from "react";
 
 export default function App({ Component, pageProps }) {
   const router = useRouter();
-  const noHeaderFooter = ["/login", "/kakao/callback", "/main/post"]; // 헤더를 제외할 페이지 목록
+  const noHeaderFooter = ["/login", "/kakao/callback", "/main/post", "/main/signUp"]; // 헤더를 제외할 페이지 목록
 
   // 서비스 워커 등록
   useEffect(() => {

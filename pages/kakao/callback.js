@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react"
 import { useRouter } from "next/router"
 import {initializeFirebaseMessaging} from "@/pages/common/firebase-messaging";
+import {postWithoutFetch} from "@/pages/common/fetch";
 
 export default function KakaoCallback() {
   const [status, setStatus] = useState("loading")
@@ -23,6 +24,10 @@ export default function KakaoCallback() {
             console.log("알림 설정 완료:", fcmToken)
           }
 
+
+          const params = { code: code, fcmToken: fcmToken }
+          await postWithoutFetch(`${BASE_URL_BACK}/auth/kakao-token`, params)
+
           const response = await fetch(`${BASE_URL_BACK}/auth/kakao-token?code=${code}&fcmToken=${fcmToken}`, {
             method: "POST",
             headers: {
@@ -31,14 +36,11 @@ export default function KakaoCallback() {
           });
 
           const result = await response.json();
-          console.log(result);
 
           if (result.code === 0) {
             setStatus("success");
-            const access_token = result.value.accessToken;
-            const refresh_token = result.value.refreshToken;
-            localStorage.setItem("access_token", access_token);
-            localStorage.setItem("refresh_token", refresh_token);
+            localStorage.setItem("access_token", result.value.accessToken);
+            localStorage.setItem("refresh_token", result.value.refreshToken);
             router.push("/main/home");
           } else {
             setStatus("error");

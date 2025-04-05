@@ -122,6 +122,40 @@ export const postWithAuthFetch = async (url, data) => {
   return response.json()
 }
 
+export const postWithoutFetch = async (url, data) => {
+  let accessToken = getAccessToken();
+
+  let response = await fetch(`${BASE_URL_BACK}${url}`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(data),
+  })
+
+  // 응답 본문을 읽기 위해 클론하여 두 번 읽을 수 있도록 처리
+  const clonedResponse = response.clone();
+
+  // JSON 응답을 파싱
+  const result = await clonedResponse.json();
+
+  // 액세스 토큰 만료 시, 새로운 액세스 토큰을 발급
+  if (result.code === 401) {
+    accessToken = await refreshAccessToken();
+
+    response = await fetch(`${BASE_URL_BACK}${url}`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${accessToken}`,
+      },
+      body: JSON.stringify(data),
+    })
+  }
+
+  return response.json()
+}
+
 export const postWithAuthAndParamsFetch = async (url, params) => {
   let accessToken = getAccessToken();
   const queryString = new URLSearchParams(params).toString()
@@ -247,4 +281,22 @@ export const tokenClear = () => {
   localStorage.removeItem('access_token');
   localStorage.removeItem('refresh_token');
   localStorage.removeItem('user_info');
+}
+
+// API 응답 처리 공통 코드
+export const handleApiResponse = async (response) => {
+  switch (response.code) {
+    case 0:
+      return response;
+    case 400:
+      alert(response.value);
+      break
+    case 401:
+      alert("인증이 필요합니다.")
+      window.location.href = "/login"
+      break
+    default:
+      throw new Error(data.message || "알 수 없는 오류 발생")
+  }
+
 }
