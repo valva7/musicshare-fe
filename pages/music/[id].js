@@ -3,14 +3,14 @@
 import { useState, useRef, useEffect } from "react"
 import { useRouter } from 'next/router';
 import Image from "next/image"
-import { Bookmark, Download, Share2, Heart } from "lucide-react"
+import { Bookmark, Download, Heart } from "lucide-react"
 import {
   getAccessToken, getUserInfo, getWithAuthAndParamsFetch,
   getWithoutAuthAndParamFetch, postWithAuthFetch
 } from "@/pages/common/fetch"
-import AudioWaveformC from "@/pages/common/AudioWaveFormC";
+import AudioWaveformC from "@/pages/components/AudioWaveFormC";
 import RatingPopup from "@/pages/components/RatingPopup";
-import FanButton from "@/pages/common/FanButton";
+import FanButton from "@/pages/components/FanButton";
 
 
 export default function MusicDetailPage({}) {
@@ -62,16 +62,14 @@ export default function MusicDetailPage({}) {
 
   const loadFanStatus = async (artistId) => {
     if (accessToken) {
-      const params = { artistId: artistId }
-      const result = await getWithAuthAndParamsFetch("/fan", params)
+      const result = await getWithAuthAndParamsFetch(`/fan/${artistId}`)
 
       setIsFanning(result.value);
     }
   }
 
   const loadIsLiked = async (musicId) => {
-    const params = { musicId: musicId }
-    const result = await getWithAuthAndParamsFetch("/like/music", params)
+    const result = await getWithAuthAndParamsFetch(`/like/music/${musicId}`)
 
     setLike(result.value.liked);
     setLikeCount(result.value.likeCount)
@@ -146,8 +144,7 @@ export default function MusicDetailPage({}) {
     if (!musicId) return
 
     try {
-      const params = { musicId: musicId }
-      const result = await getWithAuthAndParamsFetch("/comment/public", params)
+      const result = await getWithAuthAndParamsFetch(`/comment/public/${musicId}`)
 
       if (result && Array.isArray(result.value)) {
         setComments(result.value)

@@ -67,7 +67,7 @@ export default function KakaoLogin() {
         localStorage.setItem("access_token", result.value.accessToken);
         localStorage.setItem("refresh_token", result.value.refreshToken);
         // 로그인 성공 시 홈페이지로 이동
-        await router.push("/main/home")
+        await router.push("/home")
       } else {
         setErrors({
           general: "이메일과 비밀번호를 확인해주세요.",
@@ -211,7 +211,7 @@ export default function KakaoLogin() {
 
               <div className="text-center">
                 <span className="text-gray-400 text-sm">계정이 없으신가요?</span>{" "}
-                <a href="/main/signUp" className="text-[#4AFF8C] hover:underline text-sm font-medium">
+                <a href="/signUp" className="text-[#4AFF8C] hover:underline text-sm font-medium">
                   회원가입
                 </a>
               </div>

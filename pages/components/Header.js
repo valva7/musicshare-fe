@@ -62,7 +62,7 @@ export default function Header() {
   const handleLogout = () => {
     console.log("logout")
     tokenClear();
-    window.location.href = '/main/home'; // 로그아웃 후 홈 화면으로 이동
+    window.location.href = '/home'; // 로그아웃 후 홈 화면으로 이동
   }
 
   const menuItems = [
@@ -99,7 +99,7 @@ export default function Header() {
               <div className="flex items-center">
                 <div className="flex-shrink-0 flex items-center">
                   <Music className={`h-8 w-8 ${isDarkMode ? "text-white" : "text-black"}`} />
-                  <span className="ml-2 text-xl font-bold cursor-pointer hover:text-indigo-300" onClick={() => {router.push('/main/home')}}>Melody & Voice</span>
+                  <span className="ml-2 text-xl font-bold cursor-pointer hover:text-indigo-300" onClick={() => {router.push('/home')}}>Melody & Voice</span>
                 </div>
               </div>
 

@@ -1,8 +1,8 @@
 "use client"
 
-import { useState, useRef } from "react"
+import {useState, useRef, useEffect} from "react"
 import { X, Upload, Music, AlertCircle, Loader } from "lucide-react"
-import { fetchFileWithAuth } from "@/pages/common/fetch";
+import {fetchFileWithAuth, getCommonCode} from "@/pages/common/fetch";
 
 export default function UploadModal({ isOpen, onClose }) {
   const [dragActive, setDragActive] = useState(false)
@@ -17,6 +17,21 @@ export default function UploadModal({ isOpen, onClose }) {
     tags: "",
     description: "",
   })
+  const [themeCode, setThemeCode] = useState([]);
+  const [genreCode, setGenreCode] = useState([]);
+
+  useEffect(() => {
+    if (!isOpen) return;
+
+    loadCode();
+  }, [isOpen]);
+
+  const loadCode = async () => {
+    const theme = await getCommonCode(`/common/code/theme`);
+    const genre = await getCommonCode(`/common/code/genre`);
+    setThemeCode(theme.value);
+    setGenreCode(genre.value);
+  };
 
   if (!isOpen) return null
 
@@ -241,7 +256,7 @@ export default function UploadModal({ isOpen, onClose }) {
                     </div>
 
                     <div>
-                      <label className="block text-gray-400 text-sm mb-1">장르</label>
+                      <label className="block text-gray-400 text-sm mb-1">장르 *</label>
                       <select
                           name="genre"
                           value={formData.genre}
@@ -250,20 +265,14 @@ export default function UploadModal({ isOpen, onClose }) {
                           disabled={isUploading}
                       >
                         <option value="">장르 선택</option>
-                        <option value="dance">댄스</option>
-                        <option value="hiphop">힙합</option>
-                        <option value="rnb">R&B</option>
-                        <option value="rock">락</option>
-                        <option value="ballad">발라드</option>
-                        <option value="indie">인디</option>
-                        <option value="classical">클래식</option>
-                        <option value="trot">트로트</option>
-                        <option value="electronic">일렉트로닉</option>
+                        {genreCode.map((genre) => (
+                            <option key={genre.code} value={genre.code}>{genre.name}</option>
+                        ))}
                       </select>
                     </div>
 
                     <div>
-                      <label className="block text-gray-400 text-sm mb-1">테마</label>
+                      <label className="block text-gray-400 text-sm mb-1">테마 *</label>
                       <select
                           name="theme"
                           value={formData.theme}
@@ -271,16 +280,14 @@ export default function UploadModal({ isOpen, onClose }) {
                           className="w-full px-4 py-2 bg-[#333] border border-gray-700 rounded-lg text-white focus:outline-none focus:border-[#4AFF8C]"
                       >
                         <option value="">테마 선택</option>
-                        <option value="movie">영화</option>
-                        <option value="nature">자연</option>
-                        <option value="space">우주</option>
-                        <option value="love">사랑</option>
-                        <option value="daily">일상</option>
+                        {themeCode.map((theme) => (
+                            <option key={theme.code} value={theme.code}>{theme.name}</option>
+                        ))}
                       </select>
                     </div>
 
                     <div>
-                      <label className="block text-gray-400 text-sm mb-1">태그 (쉼표로 구분)</label>
+                      <label className="block text-gray-400 text-sm mb-1">태그 (쉼표로 구분) *</label>
                       <input
                           type="text"
                           name="tags"
@@ -293,7 +300,7 @@ export default function UploadModal({ isOpen, onClose }) {
                     </div>
 
                     <div>
-                      <label className="block text-gray-400 text-sm mb-1">설명</label>
+                      <label className="block text-gray-400 text-sm mb-1">설명 *</label>
                       <textarea
                           name="description"
                           value={formData.description}

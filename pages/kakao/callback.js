@@ -41,7 +41,7 @@ export default function KakaoCallback() {
             setStatus("success");
             localStorage.setItem("access_token", result.value.accessToken);
             localStorage.setItem("refresh_token", result.value.refreshToken);
-            router.push("/main/home");
+            router.push("/home");
           } else {
             setStatus("error");
             setError("알 수 없는 오류가 발생했습니다.");
@@ -59,7 +59,7 @@ export default function KakaoCallback() {
   }, [router.query.code]); // 'code' 값이 바뀔 때만 실행되도록 변경
 
   const handleGoToMain = () => {
-    router.push("/main/home")
+    router.push("/home")
   }
 
   const handleGoToLogin = () => {

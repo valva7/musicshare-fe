@@ -41,7 +41,11 @@ export const getWithAuthFetch = async (url) => {
 
 export const getWithAuthAndParamsFetch = async (url, params) => {
   let accessToken = getAccessToken();
-  const queryString = new URLSearchParams(params).toString()
+
+  let queryString = "";
+  if (params) {
+    queryString = new URLSearchParams(params).toString()
+  }
 
   let response = await fetch(`${BASE_URL_BACK}${url}?${queryString}`, {
     method: "GET",
@@ -240,7 +244,7 @@ export const loginCheckFetch = async () => {
     const result = await response.json();
 
     if (result.code === 0) {
-      window.location.href = '/main/home'; // 메인 페이지로 리다이렉트
+      window.location.href = '/home'; // 메인 페이지로 리다이렉트
     }
   } catch (error) {
     console.error("Fetch error:", error);
@@ -283,20 +287,42 @@ export const tokenClear = () => {
   localStorage.removeItem('user_info');
 }
 
+export const getCommonCode = async (url) => {
+  let response = await fetch(`${BASE_URL_BACK}${url}`, {
+    method: "GET",
+    headers: {
+      "Content-Type": "application/json",
+    },
+  })
+
+  return response.json()
+}
+
 // API 응답 처리 공통 코드
 export const handleApiResponse = async (response) => {
   switch (response.code) {
     case 0:
-      return response;
-    case 400:
-      alert(response.value);
-      break
-    case 401:
-      alert("인증이 필요합니다.")
-      window.location.href = "/login"
-      break
-    default:
-      throw new Error(data.message || "알 수 없는 오류 발생")
-  }
+      return await response.json();
 
-}
+    case 400: {
+      const result = await response.json();
+      alert(result.value);
+      break;
+    }
+
+    case 401: {
+      alert("로그인 후 이용해주세요.");
+      window.location.href = "/login";
+      break;
+    }
+
+    case 500: {
+      const result = await response.json();
+      alert(result.value);
+      break;
+    }
+
+    default:
+      throw new Error("알 수 없는 오류가 발생했습니다.");
+  }
+};
